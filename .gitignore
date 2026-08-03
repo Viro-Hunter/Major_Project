@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Testing
+*.pyc
+__pycache__/
+
+# Environment
+.venv/
+env/
+.venv*
+
+# IDE
+.vscode/
+.idea/
+
+# Output
+dist/
+build/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dashboard node modules and build output
+dashboard/node_modules/
+dashboard/dist/

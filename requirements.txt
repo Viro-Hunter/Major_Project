@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+networkx
+pandas
+python-dotenv
+pytest
+anthropic
