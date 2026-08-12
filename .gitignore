@@ -25,6 +25,18 @@ build/
 .DS_Store
 Thumbs.db
 
+# Data
+# CERT dataset is ~13GB unzipped; fetch locally via scripts/fetch_cert_data.py
+# (see README) instead of committing raw CSVs.
+data/*.csv
+data/*.zip
+data/**/*.csv
+data/**/*.zip
+data/answers/
+
+# Secrets
+.env
+
 # Dashboard node modules and build output
 dashboard/node_modules/
 dashboard/dist/
