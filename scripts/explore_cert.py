@@ -25,7 +25,15 @@ DATA_RAW = REPO_ROOT / "data" / "raw"
 # Official CMU archives extract straight into data/raw/, while some mirrors
 # (e.g., the Kaggle upload) nest the CSVs under a r4.2/ subdirectory.
 KAGGLE_NEST = DATA_RAW / "r4.2"
+DEMO_DIR = REPO_ROOT / "data" / "demo"  # trimmed subset for offline demos
 ANSWERS_DIR = DATA_RAW / "answers"
+
+
+class _DemoProbe:
+    """Placeholder that makes raw paths look absent when --demo is requested."""
+
+    def exists(self) -> bool:
+        return False
 
 CSV_FILES = ["logon.csv", "device.csv", "file.csv", "email.csv", "http.csv"]
 
@@ -73,9 +81,14 @@ def _load_answers_user_count() -> int | None:
 
 
 def explore(csv_name: str) -> None:
-    path = DATA_RAW / csv_name
-    if not path.exists() and KAGGLE_NEST.exists():
-        path = KAGGLE_NEST / csv_name
+    if isinstance(DATA_RAW, _DemoProbe):
+        path = DEMO_DIR / csv_name
+    else:
+        path = DATA_RAW / csv_name
+        if not path.exists() and KAGGLE_NEST.exists():
+            path = KAGGLE_NEST / csv_name
+        if not path.exists() and DEMO_DIR.exists():
+            path = DEMO_DIR / csv_name
     print("=" * 70)
     print(f"FILE: {csv_name} ({path})")
     if not path.exists():
@@ -102,21 +115,36 @@ def explore(csv_name: str) -> None:
 
 
 def main() -> int:
-    wanted = sys.argv[1:] if len(sys.argv) > 1 else CSV_FILES
+    global DATA_RAW, KAGGLE_NEST
+    argv = sys.argv[1:]
+    use_demo_only = "--demo" in argv
+    argv = [a for a in argv if a != "--demo"]
+    wanted = argv if argv else CSV_FILES
     wanted = [w if w.endswith(".csv") else w + ".csv" for w in wanted]
     wanted = [w for w in wanted if w in CSV_FILES]
 
-    if not DATA_RAW.exists():
-        print(f"ERROR: {DATA_RAW} does not exist. Download the CERT r4.2 CSVs first.")
-        print("See scripts/fetch_cert_data.py for a helper.")
+    if use_demo_only:
+        # Ignore raw/ mirrors; exercise only the trimmed demo subset.
+        DATA_RAW = _DemoProbe()
+        KAGGLE_NEST = _DemoProbe()
+
+    if not (DATA_RAW.exists() or DEMO_DIR.exists()):
+        print(f"ERROR: no data found. Download the CERT r4.2 CSVs first")
+        print("  (scripts/fetch_cert_data.py) or build the trimmed demo set")
+        print("  (scripts/build_demo_dataset.py).")
         return 1
 
-    missing = [c for c in wanted if not ((DATA_RAW / c).exists() or (KAGGLE_NEST / c).exists())]
+    def locate(csv_name: str):
+        if isinstance(DATA_RAW, _DemoProbe):
+            return (DEMO_DIR / csv_name).exists()
+        return (DATA_RAW / csv_name).exists() or (KAGGLE_NEST / csv_name).exists() or (DEMO_DIR / csv_name).exists()
+
+    missing = [c for c in wanted if not locate(c)]
     if missing:
         print(f"WARNING: missing CSVs (will skip): {missing}\n")
 
     for csv_name in wanted:
-        if (DATA_RAW / csv_name).exists() or (KAGGLE_NEST / csv_name).exists():
+        if locate(csv_name):
             explore(csv_name)
 
     print("=" * 70)

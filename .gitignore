@@ -33,6 +33,10 @@ data/*.zip
 data/**/*.csv
 data/**/*.zip
 data/answers/
+# The trimmed demo subset (~560 MB) IS committed for offline demos/CI;
+# the full mirror (data/raw/) stays excluded above.
+!data/demo/
+!data/demo/*.csv
 
 # Secrets
 .env

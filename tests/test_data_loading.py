@@ -13,16 +13,20 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_RAW = REPO_ROOT / "data" / "raw"
 KAGGLE_NEST = DATA_RAW / "r4.2"  # Kaggle mirrors nest the CSVs under r4.2/
+DEMO_DIR = REPO_ROOT / "data" / "demo"  # trimmed subset for offline demos
 
 CSV_FILES = ["logon.csv", "device.csv", "file.csv", "email.csv", "http.csv"]
 
 
 def require_data(csv_name: str) -> Path:
+    """Locate a CSV: raw mirror > Kaggle-nested raw > demo subset."""
     path = DATA_RAW / csv_name
     if not path.exists() and KAGGLE_NEST.exists():
         path = KAGGLE_NEST / csv_name
+    if not path.exists() and (DEMO_DIR / csv_name).exists():
+        path = DEMO_DIR / csv_name
     if not path.exists():
-        pytest.skip(f"{csv_name} not found at {DATA_RAW / csv_name} or {KAGGLE_NEST / csv_name}; fetch the dataset first")
+        pytest.skip(f"{csv_name} not found (raw/demo); fetch or build the dataset first")
     return path
 
 
