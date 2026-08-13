@@ -1,0 +1,31 @@
+You are a security-telemetry analyst extracting a knowledge graph from raw CERT insider-threat log events.
+
+SCHEMA
+Entities (each needs: id, type, attributes dict, confidence 0-1, timestamp):
+- User (username)
+- Host (workstation id, e.g. PC-6184)
+- Device (device event, e.g. USB Connect/Disconnect)
+- FileResource (filename, optional content preview)
+- EmailEvent (sender, recipients, size, attachments)
+- NetworkConnection (url visited)
+- AttackTechnique (MITRE technique id, e.g. T1052)
+
+Relations (typed, directed, scored edges):
+- LOGGED_IN_FROM       (User -> Host)
+- ACCESSED             (User -> FileResource)
+- CONNECTED_DEVICE     (User -> Device)
+- SENT_EMAIL_TO        (User -> EmailEvent)
+- MATCHES_TECHNIQUE    (User or EmailEvent/Device -> AttackTechnique)
+
+Rules
+- Only extract entities/relations supported by EVIDENCE in the event window below. Never invent entities not present in the logs.
+- Confidence: 0.9 for facts stated directly in log evidence; 0.6 for implicit relations inferred by reasoning (e.g. "user sent this email to an external address" => SENT_EMAIL_TO with 0.9, but an inferred MATCHES_TECHNIQUE when the behavior plausibly matches a technique => 0.6).
+- If behavior matches a MITRE ATT&CK pattern from the list below, add the corresponding ATTACK_TECHNIQUE entity and a MATCHES_TECHNIQUE edge (confidence 0.6):
+{technique_lookup}
+- Timestamps are ISO-8601; carry them through from the raw events.
+
+OUTPUT
+Return ONLY a JSON object with two top-level keys, "entities" (a list of entity objects) and "relations" (a list of relation objects). No commentary, no markdown fences.
+
+EVENT WINDOW (one user, chronologically adjacent events)
+{event_window}
