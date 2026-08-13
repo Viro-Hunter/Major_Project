@@ -1,0 +1,81 @@
+{
+  "description": "Mapping of insider-threat behavior patterns to MITRE ATT&CK technique IDs. Hardcoded from public ATT&CK documentation (enterprise matrix) — no live API call needed. Each entry maps a pattern name to its tactic, technique ID, technique name, and the log fields / heuristics that trigger it on CERT data.",
+  "version": "ATT&CK Enterprise (referenced publicly available documentation)",
+  "patterns": [
+    {
+      "pattern": "first_time_file_access",
+      "technique_id": "T1005",
+      "technique": "Data from Local System",
+      "tactic": "Collection",
+      "url": "https://attack.mitre.org/techniques/T1005/",
+      "trigger": "A user opens/copies a file they have no prior access history for (file.csv rows for a user not seen on that filename in earlier events)",
+      "severity": "medium"
+    },
+    {
+      "pattern": "usb_device_connect",
+      "technique_id": "T1052",
+      "technique": "Exfiltration Over Physical Medium",
+      "tactic": "Exfiltration",
+      "url": "https://attack.mitre.org/techniques/T1052/",
+      "trigger": "device.csv row with activity=Connect, especially when followed by file.csv writes to removable-media paths or large attachment content",
+      "severity": "high"
+    },
+    {
+      "pattern": "external_email_with_attachment",
+      "technique_id": "T1567",
+      "technique": "Exfiltration Over Web Service",
+      "tactic": "Exfiltration",
+      "url": "https://attack.mitre.org/techniques/T1567/",
+      "trigger": "email.csv row with attachments>0 sent to a recipient whose domain is outside the organization's internal domain list (e.g., yahoo/gmail/external domains)",
+      "severity": "high"
+    },
+    {
+      "pattern": "off_hours_login",
+      "technique_id": "T1078",
+      "technique": "Valid Accounts",
+      "tactic": "Initial Access / Persistence / Privilege Escalation / Defense Evasion",
+      "url": "https://attack.mitre.org/techniques/T1078/",
+      "trigger": "logon.csv Logon rows between 22:00-05:00 local time, or on weekends, deviating from the user's established workday window",
+      "severity": "medium"
+    },
+    {
+      "pattern": "large_data_transfer",
+      "technique_id": "T1030",
+      "technique": "Data Transfer Size Limits",
+      "tactic": "Exfiltration",
+      "url": "https://attack.mitre.org/techniques/T1030/",
+      "trigger": "email.csv rows with size > 1 MB threshold, or http.csv URLs matching known upload/file-sharing endpoints, or http.csv volume bursts for one user",
+      "severity": "high"
+    },
+    {
+      "pattern": "email_to_many_external_recipients",
+      "technique_id": "T1048",
+      "technique": "Exfiltration Over Alternative Non-C2 Protocol",
+      "tactic": "Exfiltration",
+      "url": "https://attack.mitre.org/techniques/T1048/",
+      "trigger": "email.csv rows whose to/cc/bcc lists contain >=3 external-domain addresses",
+      "severity": "high"
+    },
+    {
+      "pattern": "sensitive_file_access",
+      "technique_id": "T1213",
+      "technique": "Data from Information Repositories",
+      "tactic": "Collection",
+      "url": "https://attack.mitre.org/techniques/T1213/",
+      "trigger": "file.csv rows whose filename matches sensitive-data keywords (e.g., confidential, financial, payroll, classified, report) and are accessed outside normal role-based usage",
+      "severity": "medium"
+    },
+    {
+      "pattern": "suspicious_web_traffic",
+      "technique_id": "T1071",
+      "technique": "Application Layer Protocol",
+      "tactic": "Command and Control",
+      "url": "https://attack.mitre.org/techniques/T1071/",
+      "trigger": "http.csv rows targeting known cloud-storage/upload endpoints (e.g., file-sharing services) or URLs with high-entropy path names indicative of encoded uploads",
+      "severity": "medium"
+    }
+  ],
+  "organization_internal_domains": [
+    "dtaa.com"
+  ]
+}
