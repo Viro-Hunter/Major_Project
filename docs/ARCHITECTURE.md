@@ -1,102 +1,71 @@
-# System Architecture
+# Architecture — Graph + LLM Integration
 
-## Pipeline Overview
+This document highlights the recent design decisions and implementation details for the provider-agnostic LLM client and the graph schema / ATT&CK technique mapping added in recent work.
 
-The **CyberGraphRAG** system follows a six-stage pipeline for insider threat detection and incident response:
+## Provider-agnostic LLM client (llm/)
 
-1. **Ingestion** → 2. **Extraction** → 3. **Graph Construction** →
-4. **Retrieval** → 5. **Reasoning & Groundedness Check** →
-6. **Confidence Scoring & Decision Making** → Dashboard
+Goal: let extraction and reasoning logic invoke a single interface regardless of LLM provider (Anthropic, OpenAI, or a mock for tests).
 
-### 1. Ingestion (ingestion/)
-Processes raw security event data from multiple sources:
-- **Data Sources**: CERT r4.2/r5.2 datasets, syslog, EDR feeds
-- **Format**: CSV, JSON, raw logs with timestamps
-- **Processing**: Parse events into Event Pydantic models with normalized fields
+Key points:
 
-### 2. Extraction (extraction/)
-Extracts structured information from security events using LLM-powered entity and relationship extraction:
-- **LLM Models**: Anthropic Claude/GPT for entity recognition
-- **Output**: Normalized entities (User, Host, Process, File, Network) with ATT&CK technique mappings
-- **Validation**: Schema validation and confidence scoring for extracted data
+- Implementation lives under the `llm/` package. The code exposes a small interface used by `extraction/entity_extractor.py` and `reasoning/verdict_generator.py`:
+  - `LLMClient` (interface / base class) — send(prompt, **options) -> LLMResponse
+  - `AnthropicLLMClient` — concrete adapter for Anthropic API
+  - `OpenAILLMClient` — concrete adapter for OpenAI API
+  - `MockLLMClient` — deterministic/local responses used by tests and CI (`tests/fixtures/mock_llm.py`)
 
-### 3. Graph Construction (graph/)
-Builds and maintains the knowledge graph using NetworkX:
-- **Nodes**: Normalized entities (Users, Hosts, Processes, Files, Networks)
-- **Edges**: Relationships between entities (authentication, file access, network connections)
-- **Trust Scoring**: Multiplicative confidence scoring with temporal decay
-- **Updates**: Incremental graph updates from new security events
+- Configuration is driven by the environment variables documented in `.env.example` and `README.md`: `LLM_PROVIDER`, `LLM_MODEL`, and provider API keys.
 
-### 4. Retrieval (retrieval/)
-Routes queries to appropriate data stores based on query type:
-- **Structural Retrieval**: Graph-based queries (subgraph traversal, path finding)
-- **Semantic Retrieval**: Vector-based search for behavioral anomalies (Chroma/FAISS)
-- **Hybrid Retrieval**: Combines both approaches for comprehensive threat analysis
+- Prompts are stored as templates under `extraction/prompts/` and `reasoning/prompts/`. The extraction layer performs a lightweight schema validation step after receiving an LLM response to avoid invalid entities/relations entering the graph.
 
-### 5. Reasoning & Groundedness Check (reasoning/)
-Synthesizes threat narratives and validates evidence:
-- **LLM Reasoning**: Generates behavioral narratives, risk scores, and verdicts
-- **Groundedness Check**: Validates explanations against extracted graph evidence
-- **Evidence Links**: Maps verdicts to specific graph nodes/edges for auditability
+- The client implements:
+  - request/response logging (redacts secrets)
+  - retry/backoff for transient HTTP errors
+  - optional caching (configurable) to reduce API usage for repeated or deterministic prompts
 
-### 6. Confidence Scoring & Decision Making (evaluation/)
-Computes risk scores and determines actions:
-- **Risk Calculation**: Combines edge trust, temporal decay, and behavioral indicators
-- **Action Gating**: Threshold-based automated actions + analyst escalation
-- **Partial Confidence**: Explains incomplete evidence for ambiguous cases
+## Extraction pipeline (extraction/)
 
-### Dashboard (dashboard/)
-Real-time visualization and monitoring interface:
-- **Graph Visualization**: Interactive network graphs of detected threats
-- **Incident Queue**: Prioritized alerts with groundedness scores
-- **Analytics**: Real-time statistics and historical trends
-- **Control Center**: Manual action execution and analyst workflows
+- `extraction/entity_extractor.py` calls the LLM client through the common interface. The extractor:
+  1. Formats the prompt (uses `extraction/prompts/extract.txt`) with the event payload
+  2. Sends the prompt via the `LLMClient` implementation
+  3. Validates and normalizes the returned entities/relations against `extraction/schema.py`
+  4. Writes normalized entities/relations to the graph via `graph/updater.py`
 
-## Technologies & Components
+- Tests use `tests/fixtures/mock_llm.py` so extraction logic can be validated offline and in CI without external API keys.
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| **Backend** | FastAPI (Python 3.11) | RESTful API with async endpoints |
-| **Graph Store** | NetworkX (prod: Neo4j) | Entity relationship storage |
-| **Vector Store** | Chroma/FAISS | Semantic similarity search |
-| **LLM Integration** | Anthropic/OpenAI | Reasoning and extraction |
-| **Data Processing** | pandas, python-dotenv | Data manipulation and config |
-| **Frontend** | React + Vite | Real-time dashboard interface |
-| **Visualization** | Cytoscape.js/vis-network | Graph display and interaction |
-| **Monitoring** | PostgreSQL (audit) | Action trails and compliance |
+## Graph schema & ATT&CK technique lookup (graph/)
 
-## Data Flow Example
+- A lightweight, explicit schema was added to make relation typing and technique mapping explicit. The system now supports mapping observed behaviors and relation types to ATT&CK techniques for richer context and analyst-facing explanations.
 
-```mermaid
-graph TD
-    A[CERT Logs] --> B[ingestion/log_parser.py]
-    B --> C[Event Objects]
-    C --> D[extraction/entity_extractor.py]
-    D --> E[Normalized Entities]
-    E --> F[graph/graph_store.py]
-    F --> G[Knowledge Graph]
-    G --> H[retrieval/retriever.py]
-    H --> I[Retrieved Evidence]
-    I --> J[reasoning/verdict_generator.py]
-    J --> K[Verdict + Grounding]
-    K --> L[evaluation/scoring.py]
-    L --> M[Risk Score]
-    M --> N[dashboard/]
-```
+- Graph interactions are primarily performed through `graph/graph_store.py` and the incremental updater in `graph/updater.py`. Confidence, decay, and path-multiplication logic live in `graph/confidence.py`.
 
-## System Properties
+- ATT&CK support is implemented as a lookup/mapping step that enriches relations with:
+  - technique_id (e.g., T1005)
+  - technique_name (e.g., "Data from Local System")
+  - mapping_confidence
 
-### Explainability
-- **Evidence Tracking**: All decisions linked to graph nodes/edges
-- **Groundness Validation**: LLM responses validated against extracted facts
-- **Audit Trail**: Complete logs of all events, extractions, and decisions
+  The mapping source is a local mapping table (included in the repo under `data/` or referenced via `docs/`; see the git history for the exact file added with the dataset commit).
 
-### Performance
-- **Streaming Updates**: Incremental graph updates for real-time processing
-- **Query Optimization**: Multi-store retrieval with type-based routing
-- **Scalability**: Designed for production with Graph database options
+## Groundedness & Verdict Generation (reasoning/)
 
-### Security
-- **Attack Mapping**: Direct ATT&CK technique identification
-- **Behavioral Analysis**: Pattern recognition for insider threats
-- **Action Gating**: Automated response with analyst oversight
+- `reasoning/verdict_generator.py` now leverages the provider-agnostic LLM client to produce narratives from subgraphs. The groundedness checker (`reasoning/groundedness_checker.py`) cross-validates any claim in the narrative against graph edges before a verdict is returned or recorded.
+
+- If groundedness fails, the generator will retry with stricter prompts asking the LLM to cite edges or to abstain.
+
+## Testing & CI notes
+
+- A trimmed demo subset of the CERT r4.2 dataset was added under `data/` to make CI and offline demos feasible (see recent commit history). Unit and integration tests were extended to use this dataset and a mock LLM client to avoid external API dependency during CI.
+
+- To run the full pipeline locally (with real LLMs), ensure `LLM_PROVIDER` and API keys are set in your `.env` and follow the README quick-start section.
+
+## Where to look in the code
+
+- LLM client: `llm/` (interface + providers)
+- Extraction: `extraction/entity_extractor.py`, `extraction/schema.py`, and `extraction/prompts/`
+- Graph: `graph/graph_store.py`, `graph/updater.py`, `graph/confidence.py`
+- Reasoning: `reasoning/verdict_generator.py`, `reasoning/groundedness_checker.py`
+- Tests: `tests/fixtures/mock_llm.py`, `tests/unit/`, `tests/integration/`
+
+---
+
+If you'd like, I can expand this file to include sequence diagrams, example payloads, or code snippets showing the LLM client interface (LLMClient.send signature and expected LLMResponse shape).
