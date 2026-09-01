@@ -4,7 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+<<<<<<< HEAD
+    "dev": "vite",
+    "build": "vite build",
+    "test": "echo \"No frontend tests configured\""
+=======
     "test": "echo \"Error: no test specified\" && exit 1"
+>>>>>>> b41879e3bad66a46af7fd56c38399276053be697
   },
   "keywords": [],
   "author": "",
@@ -13,5 +19,13 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.5",
     "vite": "^8.2.0"
+<<<<<<< HEAD
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "vis-network": "^10.1.2"
+=======
+>>>>>>> b41879e3bad66a46af7fd56c38399276053be697
   }
 }
