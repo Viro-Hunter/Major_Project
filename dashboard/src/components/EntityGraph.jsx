@@ -38,11 +38,11 @@ export default function EntityGraph({ entityId, hops = 2, apiBaseUrl = '', heigh
         })));
         const edges = new DataSet((graph.links || graph.edges || []).map((edge, index) => ({
           ...edge,
-          id: edge.id || `${edge.from}-${edge.to}-${edge.key || index}`,
+          id: edge.id || `${edge.from || edge.source}-${edge.to || edge.target}-${edge.key ?? index}`,
           from: edge.from || edge.source,
           to: edge.to || edge.target,
           arrows: 'to',
-          label: edge.type || edge.relation_type || '',
+          label: edge.type || edge.relation || edge.relation_type || '',
           font: { align: 'middle', size: 10 },
         })));
         if (networkRef.current) networkRef.current.destroy();
