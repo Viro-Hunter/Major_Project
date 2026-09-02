@@ -65,8 +65,10 @@ else
 fi
 
 echo ""
-echo "✅ Setup complete."
+echo "✅ Setup complete — everything automatic."
+echo "  Fine-tune? NOT needed daily. It's ONE-TIME in Sem 8, optional."
+echo "  Base llama3.1:8b already works for Week 6 demo."
 echo "Next: ./scripts/run.sh  OR  docker compose up --build"
 echo "  API: http://localhost:8000/docs  |  Dashboard: http://localhost:5173"
-echo "  Test: .venv/bin/pytest -q"
-echo "  Ingest demo: .venv/bin/python scripts/ingest_sample_data.py"
+echo "  Test: .venv/bin/pytest -q  (70 tests, no Ollama needed)"
+echo "  Fine-tune once: .venv/bin/python scripts/build_finetune_dataset.py && see docs/TRAINING.md"

@@ -127,77 +127,68 @@
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start — For Your Friend (Copy-Paste, 3 Commands)
 
-### Prerequisites
-- **Python 3.11+** (3.12 recommended)
-- **Node.js 18+** (for React dashboard)
-- **Docker & Docker Compose** (optional, for containerized dev)
-- **API Keys:** Anthropic or OpenAI (set in `.env`)
-
-### Local Development Setup
-
-#### 1. Clone & Install
+> **No paid keys. No daily training. Just works.**
 
 ```bash
+# 1) Clone
 git clone https://github.com/Viro-Hunter/Major_Project.git
 cd Major_Project
+cp .env.example .env   # already set to free local Ollama
 
-# Copy environment template
+# 2) One-command setup (WSL / macOS / Linux — pulls llama3.1:8b ~5GB first time only)
+./scripts/setup.sh
+#    ↳ creates .venv, pip install, ollama pull llama3.1:8b, npm build
+#    If Ollama not installed: https://ollama.com/download  OR use Docker:
+#    docker compose up --build -d && docker exec cybergraphrag-ollama ollama pull llama3.1:8b
+
+# 3) Run
+./scripts/run.sh
+# API → http://localhost:8000/docs
+# Dashboard → http://localhost:5173  (shows 501 nodes, multi-entity graph)
+```
+That's it. **Fine-tune is NOT daily** — it's *one time* in Sem 8 only if you want a custom model (see below). Your friend never needs to train.
+
+<details>
+<summary>Manual steps (if you prefer)</summary>
+
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your API keys
+uvicorn api.main:app --reload --port 8000  # backend
+cd dashboard && npm install && npm run dev  # frontend
 ```
+</details>
 
-#### 2. Backend (Python)
+### First Query (Works Immediately, 501 nodes ready)
 
 ```bash
-# Create virtual environment
-python3.11 -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+# No ingest needed — 15% CERT graph (501 nodes) auto-loads on startup.
+# Or rebuild it:
+.venv/bin/python scripts/build_graph_from_cert.py --users 200 --rows-per-user 80 --output data/cert_graph_15pct.json
 
-# Install dependencies
-pip install poetry
-poetry install
+# Query
+curl http://localhost:8000/health
+curl http://localhost:8000/graph/subgraph/AAM0658?hops=2 | jq .nodes[0]
 
-# Run migrations (if using PostgreSQL)
-alembic upgrade head
-
-# Start FastAPI server
-uvicorn api.main:app --reload --port 8000
-```
-
-#### 3. Frontend (React)
-
-```bash
-cd dashboard
-npm install
-npm start  # Runs on http://localhost:3000
-```
-
-#### 4. Docker Compose (All-in-One)
-
-```bash
-docker-compose up -d
-# Backend: http://localhost:8000
-# Frontend: http://localhost:3000
-# PostgreSQL: localhost:5432
-```
-
-### First Query
-
-```bash
-# Ingest sample CERT logs
-python scripts/ingest_sample_data.py --dataset cert_r4.2
-
-# Query the system
 curl -X POST http://localhost:8000/incidents/analyze \
   -H "Content-Type: application/json" \
-  -d '{
-    "entity": "d.kapoor",
-    "query": "What actions did this user take outside business hours?",
-    "threshold": 0.7
-  }'
+  -d '{"entity":"AAM0658","query":"Why is user linked to host?"}' | jq .verdict
+# → {"narrative":..., "risk_score":0.9, "model":"llama3.1:8b"} when Ollama live, else "template-fallback"
 ```
+
+### Fine-Tune? One Time Only (Optional, Sem 8)
+
+```bash
+# You do this ONCE, not daily. Friend just pulls the result.
+.venv/bin/python scripts/build_finetune_dataset.py --limit 5000 --output data/finetune.jsonl
+ollama create cybergraphrag:ft -f Modelfile.finetuned  # needs adapters/ from training
+echo "OPENAI_MODEL=cybergraphrag:ft" >> .env
+# Friend: ollama pull <your-registry>/cybergraphrag:ft  (no GPU needed)
+```
+See `docs/TRAINING.md:1` for full QLoRA guide.
 
 ---
 
