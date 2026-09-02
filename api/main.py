@@ -37,7 +37,8 @@ async def bootstrap():
     try:
         from graph.graph_store import store
         if store.num_nodes() == 0:
-            # minimal demo: create a few risky patterns
+            # minimal demo: create a few risky patterns — include both d.kapoor (used in README) and AAM0658 (used in dashboard/tests)
+            # d.kapoor cluster (insider exfiltration demo)
             store.add_node("d.kapoor", type="User", risk_baseline=0.3)
             store.add_node("C:\\data\\secrets.zip", type="File")
             store.add_node("192.168.1.50", type="IP")
@@ -45,6 +46,15 @@ async def bootstrap():
             store.add_edge("d.kapoor", "C:\\data\\secrets.zip", relation="Exfiltration", base_confidence=0.92)
             store.add_edge("d.kapoor", "PC-ADMIN-01", relation="PrivEsc", base_confidence=0.88)
             store.add_edge("d.kapoor", "192.168.1.50", relation="ConnectedTo", base_confidence=0.75)
-            print("Bootstrapped demo graph: 4 nodes, 3 edges")
+            # AAM0658 cluster (vis-network demo, CERT-like)
+            store.add_node("AAM0658", type="User")
+            store.add_node("PC-001", type="Host")
+            store.add_node("confidential_report.pdf", type="FileResource")
+            store.add_node("T1078", type="AttackTechnique")
+            store.add_edge("AAM0658", "PC-001", relation="LOGGED_IN_FROM", base_confidence=0.9)
+            store.add_edge("AAM0658", "confidential_report.pdf", relation="ACCESSED", base_confidence=0.85)
+            store.add_edge("AAM0658", "T1078", relation="MATCHES_TECHNIQUE", base_confidence=0.88)
+            store.add_edge("PC-001", "confidential_report.pdf", relation="ACCESSED", base_confidence=0.7)
+            print("Bootstrapped demo graph: 8 nodes, 7 edges (d.kapoor + AAM0658)")
     except Exception as e:
         print(f"Bootstrap failed: {e}")
