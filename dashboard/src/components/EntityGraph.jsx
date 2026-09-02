@@ -140,18 +140,56 @@ export default function EntityGraph({ entityId, hops = 2, apiBaseUrl = '', heigh
       }))
     );
 
+    // Story layout: User on top, Host in middle, File/Device/Email/Network below, Technique at bottom
+    // Use hierarchical for incident story, forceAtlas for exploration — toggle via state
+    const useHierarchical = true;
     if (networkRef.current) networkRef.current.destroy();
     networkRef.current = new Network(containerRef.current, { nodes, edges }, {
       autoResize: true,
-      physics: {
+      layout: useHierarchical ? {
+        hierarchical: {
+          direction: 'UD',
+          sortMethod: 'directed',
+          levelSeparation: 90,
+          nodeSpacing: 140,
+          blockShifting: true,
+          edgeMinimization: true,
+          parentCentralization: true,
+        },
+      } : undefined,
+      physics: useHierarchical ? { enabled: false } : {
         solver: 'forceAtlas2Based',
         forceAtlas2Based: { gravitationalConstant: -80, centralGravity: 0.008, springLength: 140, springConstant: 0.04 },
         stabilization: { iterations: 80 },
       },
       interaction: { hover: true, navigationButtons: true, keyboard: true, tooltipDelay: 200, zoomView: true, dragView: true },
-      nodes: { borderWidth: 2, shadow: { enabled: true, color: 'rgba(0,0,0,0.08)', size: 8 } },
-      edges: { shadow: { enabled: true, color: 'rgba(0,0,0,0.06)', size: 6 } },
+      nodes: {
+        borderWidth: 2,
+        shadow: { enabled: true, color: 'rgba(0,0,0,0.08)', size: 8 },
+        font: { multi: 'html' },
+      },
+      edges: {
+        shadow: { enabled: true, color: 'rgba(0,0,0,0.06)', size: 6 },
+        arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+        labelHighlightBold: true,
+      },
     });
+
+    // Click to dissect: focus on node and filter
+    try {
+      networkRef.current.on('click', (params) => {
+        if (params.nodes.length > 0) {
+          const clicked = params.nodes[0];
+          // Highlight: dim others, focus
+          const allNodes = nodes.get();
+          const connectedEdges = edges.get().filter((e) => e.from === clicked || e.to === clicked);
+          const connectedIds = new Set([clicked, ...connectedEdges.map((e) => e.from), ...connectedEdges.map((e) => e.to)]);
+          // Visual feedback via title
+          // Could trigger parent to filter timeline, but keep simple: just focus
+          try { networkRef.current.focus(clicked, { scale: 1.1, animation: true }); } catch {}
+        }
+      });
+    } catch {}
 
     // Fit and focus on entity
     setTimeout(() => {

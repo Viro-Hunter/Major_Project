@@ -79,3 +79,81 @@ async def list_entities(
 async def search_entities(q: str = Query(..., min_length=1), limit: int = Query(20, ge=1, le=100)):
     """Alias for /graph/entities?q="""
     return await list_entities(q=q, limit=limit)
+
+
+@router.get("/graph/timeline/{entity_id}")
+async def get_timeline(entity_id: str, limit: int = Query(50, ge=1, le=200)):
+    """Dissected timeline: User A accessed file X from PC G at time xyz → technique K.
+
+    Returns chronological edges for entity, with human-readable story.
+    """
+    if entity_id not in store.graph:
+        raise HTTPException(status_code=404, detail=f"unknown entity: {entity_id}")
+    # Collect all edges where entity is source or target, or where entity is in the path
+    # For story, take 1-hop neighborhood and sort by timestamp
+    edges = []
+    for src, dst, key, data in store.graph.edges(keys=True, data=True):
+        if src == entity_id or dst == entity_id:
+            edges.append({"source": src, "target": dst, "key": key, **data})
+    # Also include 2-hop technique links via file/device
+    # e.g., file → technique where file was accessed by user
+    # Find files/devices accessed by user, then their technique links
+    try:
+        # Use get_subgraph_dict to get 2-hop neighborhood, then filter
+        sub = store.get_subgraph_dict(entity_id, hops=2)
+        for e in sub.get("edges", []):
+            if e not in edges and (e.get("source") == entity_id or e.get("target") == entity_id):
+                # already included
+                continue
+    except Exception:
+        pass
+
+    def story_for(edge):
+        src = edge.get("source")
+        dst = edge.get("target")
+        typ = edge.get("type") or edge.get("relation") or "UNKNOWN"
+        ts = edge.get("timestamp") or ""
+        # Human story
+        if typ == "LOGGED_IN_FROM" or typ == "OBSERVED_ON":
+            return f"{src} observed on {dst} at {ts}"
+        if typ == "ACCESSED":
+            return f"{src} accessed file {dst} at {ts}"
+        if typ == "LOCATED_ON":
+            return f"File {src} located on {dst} at {ts}"
+        if typ == "SENT_EMAIL_TO":
+            return f"{src} sent email {dst} at {ts} to {edge.get('to','')}"
+        if typ == "MATCHES_TECHNIQUE":
+            pat = edge.get("pattern", "")
+            return f"{src} matched technique {dst} ({pat}) at {ts}"
+        if typ == "INDICATES":
+            return f"{src} indicates {dst} at {ts}"
+        # generic
+        return f"{src} —{typ}→ {dst} at {ts}"
+
+    # Sort by timestamp
+    def ts_key(e):
+        try:
+            from datetime import datetime
+
+            return datetime.fromisoformat(str(e.get("timestamp", "")))
+        except Exception:
+            return str(e.get("timestamp", ""))
+
+    edges.sort(key=lambda e: str(e.get("timestamp", "")))
+
+    # Add story field
+    for e in edges:
+        e["story"] = story_for(e)
+
+    # Cap
+    total = len(edges)
+    edges = edges[:limit]
+
+    # Also build a high-level incident summary: group by time
+    summary = f"User {entity_id} has {total} events; showing {len(edges)} most recent. "
+    if any(e.get("type") == "MATCHES_TECHNIQUE" for e in edges):
+        summary += "Technique matches indicate insider behavior."
+    else:
+        summary += "No technique matches in this window — appears benign."
+
+    return {"entity": entity_id, "total_events": total, "events": edges, "summary": summary}

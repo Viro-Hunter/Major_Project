@@ -113,6 +113,10 @@ def match_patterns(row: dict[str, Any], log_name: str, prior_files: dict[str, se
 
 
 def build_graph(user_limit: int = 20, rows_per_user: int = 25) -> GraphStore:
+    """Build a STORY graph: User → Host → File/Device/Email/Network → Technique, with timestamps.
+
+    Each CERT row becomes a mini-chain so the vis shows: user A accessed file X from PC G at time xyz → technique K.
+    """
     lookup = json.loads(LOOKUP_PATH.read_text())
     paths = [path for name in CSV_NAMES if (path := locate(name))]
     labels = answer_labels()
@@ -120,9 +124,10 @@ def build_graph(user_limit: int = 20, rows_per_user: int = 25) -> GraphStore:
     store = GraphStore()
     labeled = set(labels) if labels else set(FALLBACK_LABELED_USERS)
     for user in users:
-        store.add_entity({"id": user, "type": "User", "attributes": {"insider_threat_label": user in labeled, "labels_verified": bool(labels)}})
+        store.add_entity({"id": user, "type": "User", "attributes": {"insider_threat_label": user in labeled, "labels_verified": bool(labels), "name": user}})
 
-    counts: defaultdict[str, int] = defaultdict(int)
+    # Per-log-type counts so file/email/http story nodes aren't starved by logon
+    counts: defaultdict[tuple, int] = defaultdict(int)
     prior_files: defaultdict[str, set[str]] = defaultdict(set)
     techniques = technique_nodes(lookup)
     for name in CSV_NAMES:
@@ -133,7 +138,7 @@ def build_graph(user_limit: int = 20, rows_per_user: int = 25) -> GraphStore:
             chunk = chunk.fillna("")
             for row in chunk.to_dict("records"):
                 user = str(row.get("user", ""))
-                if user not in users or counts[user] >= rows_per_user:
+                if user not in users or counts[(user, name)] >= rows_per_user:
                     continue
                 host = str(row.get("pc", ""))
                 if not host:
@@ -141,14 +146,54 @@ def build_graph(user_limit: int = 20, rows_per_user: int = 25) -> GraphStore:
                 host_id = f"host:{host}"
                 store.add_entity({"id": host_id, "type": "Host", "attributes": {"name": host}})
                 timestamp = parse_event_timestamp(str(row.get("date", "")))
-                store.add_relation(user, host_id, "OBSERVED_ON", 0.9, timestamp, source=name)
+                # Core: User observed on Host (kept for backward compat)
+                store.add_relation(user, host_id, "OBSERVED_ON", 0.9, timestamp, source=name, activity=row.get("activity", ""))
+
+                # Story nodes per log type — creates the "user A accessed X from PC G at time xyz" chain
+                try:
+                    if name == "file":
+                        fname = str(row.get("filename", "")).strip()
+                        if fname:
+                            fid = f"file:{fname}"
+                            store.add_entity({"id": fid, "type": "FileResource", "attributes": {"name": fname, "content_preview": str(row.get("content", ""))[:80]}})
+                            store.add_relation(user, fid, "ACCESSED", 0.88, timestamp, source=name, pc=host)
+                            store.add_relation(fid, host_id, "LOCATED_ON", 0.7, timestamp, source=name)
+                    elif name == "device":
+                        did = f"device:{row.get('id', '') or host + ':' + row.get('activity','')}"
+                        store.add_entity({"id": did, "type": "Device", "attributes": {"activity": row.get("activity", ""), "pc": host}})
+                        store.add_relation(user, did, "CONNECTED_DEVICE", 0.85, timestamp, source=name, activity=row.get("activity", ""))
+                        store.add_relation(did, host_id, "CONNECTED_TO", 0.7, timestamp, source=name)
+                    elif name == "email":
+                        eid = f"email:{row.get('id', '') or user + ':' + timestamp}"
+                        store.add_entity({"id": eid, "type": "EmailEvent", "attributes": {"from": row.get("from",""), "to": str(row.get("to",""))[:80], "size": row.get("size",""), "attachments": row.get("attachments","")}})
+                        store.add_relation(user, eid, "SENT_EMAIL_TO", 0.9, timestamp, source=name, to=str(row.get("to",""))[:60])
+                        store.add_relation(eid, host_id, "SENT_FROM", 0.65, timestamp, source=name)
+                    elif name == "http":
+                        url = str(row.get("url", "")).strip()
+                        if url:
+                            nid = f"net:{url[:60]}"
+                            store.add_entity({"id": nid, "type": "NetworkConnection", "attributes": {"url": url[:120]}})
+                            store.add_relation(user, nid, "BROWSED", 0.8, timestamp, source=name, url=url[:80])
+                            store.add_relation(nid, host_id, "FROM_HOST", 0.6, timestamp, source=name)
+                except Exception:
+                    # Story nodes are best-effort; core graph must stay green
+                    pass
+
                 for pattern in match_patterns(row, name, prior_files):
                     tid, detail = techniques[pattern]
                     technique_id = f"attack:{tid}"
                     store.add_entity({"id": technique_id, "type": "AttackTechnique", "attributes": detail})
                     store.add_relation(user, technique_id, "MATCHES_TECHNIQUE", 0.75, timestamp, pattern=pattern, source=name)
-                counts[user] += 1
-            if all(counts[u] >= rows_per_user for u in users):
+                    # Also link the story node to technique for dissectable trace: File/Device → Technique
+                    try:
+                        if name == "file" and fname:
+                            store.add_relation(fid, technique_id, "INDICATES", 0.65, timestamp, pattern=pattern)
+                        elif name == "device":
+                            store.add_relation(did, technique_id, "INDICATES", 0.65, timestamp, pattern=pattern)
+                    except Exception:
+                        pass
+                counts[(user, name)] += 1
+            if all(counts[(u, name)] >= rows_per_user for u in users):
                 break
     return store
 

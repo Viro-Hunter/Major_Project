@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import EntityGraph from './EntityGraph';
+import Timeline from './Timeline';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -249,16 +250,24 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Graph */}
+        {/* Graph - Now story-focused, hierarchical */}
         <section style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 4px 20px rgba(15,23,42,0.06)', border: '1px solid #e2e8f0', marginBottom: 18 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Attack-Path Visualization</h3>
+            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800, color: '#0f172a' }}>Incident Story — <span style={{ fontWeight: 400, color: '#475569' }}>User A accessed file X from PC G at time xyz → result K</span></h3>
             <span style={{ fontSize: 12, color: '#64748b' }}>
               {subgraph ? `${subgraph.nodes?.length ?? 0} nodes • ${subgraph.edges?.length ?? 0} edges` : '—'} {entityId && `for ${entityId}`}
             </span>
           </div>
           <EntityGraph entityId={entityId} hops={hops} apiBaseUrl={API} />
           {error && <p style={{ color: '#b91c1c', background: '#fef2f2', padding: '8px 10px', borderRadius: 8, border: '1px solid #fecaca', marginTop: 10 }}>{error}</p>}
+          <p style={{ fontSize: 11, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
+            Tip: Click a clustered node (e.g. <code>host:PC-9523</code> with 100+ edges) to dissect — the Timeline below shows the story step-by-step. Use “Group parallel” + “Top 25” to de-clutter; increase hops to 3 to see Technique at the bottom.
+          </p>
+        </section>
+
+        {/* Dissected Timeline — the “easy to analyze” view */}
+        <section style={{ background: 'white', borderRadius: 16, padding: 16, boxShadow: '0 4px 20px rgba(15,23,42,0.06)', border: '1px solid #e2e8f0', marginBottom: 18 }}>
+          <Timeline entityId={entityId} apiBaseUrl={API} />
         </section>
 
         {/* Analyze + Health */}
