@@ -10,7 +10,7 @@ Usage (env vars):
     LLM_PROVIDER=openai     OPENAI_API_KEY=sk-...          [model: gpt-4-turbo]
     LLM_PROVIDER=openai     OPENAI_API_BASE=http://localhost:11434/v1   (Ollama)
                             OPENAI_API_KEY=ollama          (any placeholder)
-                            OPENAI_MODEL=llama3.1:8b
+                            OPENAI_MODEL=qwen2.5:3b
 
 Tests inject a provider via ``LLMClient(provider="mock", model="test")`` —
 see tests/test_entity_extractor.py.
@@ -66,12 +66,13 @@ class LLMClient:
 
     # ------------------------------------------------------------------ #
     def _default_model(self) -> str:
-        env_model = os.getenv("LLM_MODEL")
+        env_model = os.getenv("LLM_MODEL") or os.getenv("OPENAI_MODEL")
         if env_model:
             return env_model
         if self.provider == "anthropic":
             return "claude-3-5-sonnet-20241022"
-        return "gpt-4-turbo"
+        # Ollama default — low-RAM Qwen
+        return "qwen2.5:3b"
 
     def _api_key_for(self, provider: str) -> str:
         key = os.getenv("ANTHROPIC_API_KEY" if provider == "anthropic" else "OPENAI_API_KEY", "")

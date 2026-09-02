@@ -1,6 +1,6 @@
 # Ollama — Local LLM for CyberGraphRAG (Week 6+)
 
-**Default (free, download-and-run):** `llama3.1:8b` via Ollama. No paid key needed. First run pulls ~5GB; subsequent runs are offline.
+**Default (free, low-RAM Qwen):** `qwen2.5:3b` (1.9GB) via Ollama — fits 4GB RAM, CPU-only. No paid key. First run pulls ~1.9GB (0.5b is 396MB for 2GB VMs); subsequent runs offline.
 
 ## Quickstart (any PC, WSL included)
 
@@ -8,12 +8,12 @@
 git clone https://github.com/Viro-Hunter/Major_Project.git && cd Major_Project
 cp .env.example .env   # already set to Ollama
 # Option A — bare metal (recommended for WSL):
-./scripts/setup.sh          # pulls llama3.1:8b, creates .venv, builds dashboard
+./scripts/setup.sh          # pulls qwen2.5:3b, creates .venv, builds dashboard
 ./scripts/run.sh            # API :8000, dashboard :5173
 
 # Option B — Docker (one command for all 3 services):
 docker compose up --build -d
-docker exec cybergraphrag-ollama ollama pull llama3.1:8b
+docker exec cybergraphrag-ollama ollama pull qwen2.5:3b
 # API http://localhost:8000/docs  Dashboard http://localhost:5173
 ```
 
@@ -21,10 +21,10 @@ docker exec cybergraphrag-ollama ollama pull llama3.1:8b
 
 | Model | RAM | Quality | Install |
 |-------|-----|---------|---------|
-| `qwen2.5:3b` | ~4GB | fast, CPU OK | `ollama pull qwen2.5:3b` |
-| `llama3.1:8b` (default) | ~8GB | balanced | `ollama pull llama3.1:8b` |
+| `qwen2.5:0.5b` | ~2GB | tiny, fastest | `ollama pull qwen2.5:0.5b` |
+| `qwen2.5:3b` (default) | ~4GB | balanced, low-RAM | `ollama pull qwen2.5:3b` |
+| `qwen2.5:7b` | ~8GB | higher quality | `ollama pull qwen2.5:7b` |
 | `phi3:mini` | ~4GB | CPU-optimized | `ollama pull phi3:mini` |
-| `gemma2:9b` | ~9GB | higher quality | `ollama pull gemma2:9b` |
 
 Switch: `make pull-model MODEL=qwen2.5:3b` or `./scripts/pull_model.sh gemma2:9b`
 
@@ -36,7 +36,7 @@ Switch: `make pull-model MODEL=qwen2.5:3b` or `./scripts/pull_model.sh gemma2:9b
 LLM_PROVIDER=openai
 OPENAI_API_BASE=http://localhost:11434/v1
 OPENAI_API_KEY=ollama      # dummy
-OPENAI_MODEL=llama3.1:8b
+OPENAI_MODEL=qwen2.5:3b
 ```
 
 Inside Docker, `OPENAI_API_BASE=http://ollama:11434/v1` (compose sets it).

@@ -22,7 +22,7 @@
 
 ### Week 4 — Ingestion + Extraction (v1) ✅
 - Pipeline: `ingestion/log_parser.py` normalizes CERT rows (`parse_logon_row`, `parse_device_row`, `parse_file_row`, `parse_email_row`, `parse_http_row`) → uniform `Event(user, timestamp, event_type, raw_fields, event_id)` plus advanced `parse_cert_log` for pandas CERT r4.2.
-- `extraction/entity_extractor.py` (hybrid) + `extraction/prompts/extract.txt` + `llm/client.py` (provider-agnostic: `LLM_PROVIDER=openai` with `OPENAI_API_BASE=http://localhost:11434/v1` for Ollama `llama3.1:8b` default, fallback to Anthropic). Confidence contract 0.9 direct / 0.6 inferred.
+- `extraction/entity_extractor.py` (hybrid) + `extraction/prompts/extract.txt` + `llm/client.py` (provider-agnostic: `LLM_PROVIDER=openai` with `OPENAI_API_BASE=http://localhost:11434/v1` for Ollama `qwen2.5:3b` default, fallback to Anthropic). Confidence contract 0.9 direct / 0.6 inferred.
 - **Tests:** `tests/test_log_parser.py`, `tests/test_entity_extractor.py`, `tests/test_data_loading.py` (demo CSVs under `data/demo/`).
 
 ### Week 5 — Knowledge Graph (NetworkX) ✅
@@ -42,10 +42,10 @@
 
 ```bash
 git clone https://github.com/Viro-Hunter/Major_Project.git && cd Major_Project
-cp .env.example .env   # already Ollama: LLM_PROVIDER=openai, OPENAI_MODEL=llama3.1:8b
-./scripts/setup.sh     # pulls llama3.1:8b, .venv, npm build (WSL-safe)
+cp .env.example .env   # already Ollama: LLM_PROVIDER=openai, OPENAI_MODEL=qwen2.5:3b
+./scripts/setup.sh     # pulls qwen2.5:3b, .venv, npm build (WSL-safe)
 ./scripts/run.sh       # API :8000, dashboard :5173
-# OR docker compose up --build -d && docker exec cybergraphrag-ollama ollama pull llama3.1:8b
+# OR docker compose up --build -d && docker exec cybergraphrag-ollama ollama pull qwen2.5:3b
 pytest -q              # 70 passed
 curl http://localhost:8000/graph/subgraph/AAM0658?hops=2
 curl -X POST http://localhost:8000/incidents/query -H "Content-Type: application/json" -d '{"entity_id":"AAM0658","question":"Why is user linked to host?"}'
@@ -58,4 +58,4 @@ Dashboard at `http://localhost:5173` shows vis-network graph + retrieval paths +
 - Week 7: `reasoning/verdict_generator.py` + `groundedness_checker.py` (already scaffolded, to be wired end-to-end)
 - Week 8: groundedness self-check novelty
 - Week 9-10: confidence propagation + `evaluation/metrics.py` (retrieval accuracy, graph completeness, threat-correlation precision, response time, F1)
-- Sem 8: interactive dashboard analytics + adaptive routing + `Modelfile.finetuned` (QLoRA) for `llama3.1:8b`
+- Sem 8: interactive dashboard analytics + adaptive routing + `Modelfile.finetuned` (QLoRA) for `qwen2.5:3b`

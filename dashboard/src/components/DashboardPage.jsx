@@ -279,7 +279,7 @@ export default function DashboardPage() {
                 : 'Run Analyze to see model'}
               <br />
               <span style={{ fontSize: 11, color: '#64748b' }}>
-                {isFallback ? 'Start: ollama serve & ollama pull llama3.1:8b' : 'Fine-tune once → Modelfile.finetuned → OPENAI_MODEL=cybergraphrag:ft (see docs/TRAINING.md)'}
+                {isFallback ? 'Start: ollama serve & ollama pull qwen2.5:3b' : 'Fine-tune once → Modelfile.finetuned → OPENAI_MODEL=cybergraphrag:ft (see docs/TRAINING.md)'}
               </span>
             </div>
           </div>
@@ -396,7 +396,7 @@ export default function DashboardPage() {
           <a href={`${API}/graph/stats`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Graph stats</a>
           <a href={`${API}/metrics`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Metrics</a>
           <a href={`${API}/actions`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Actions</a>
-          <span style={{ alignSelf: 'center' }}>• Ollama default: <code>llama3.1:8b</code> — change via <code>.env</code> or <code>./scripts/pull_model.sh</code></span>
+          <span style={{ alignSelf: 'center' }}>• Ollama default: <code>qwen2.5:3b</code> — change via <code>.env</code> or <code>./scripts/pull_model.sh</code></span>
         </div>
       </main>
     </div>

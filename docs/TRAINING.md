@@ -1,6 +1,6 @@
 # Training & Fine-Tuning Guide — From 15% → 100% (Week 12 Robust)
 
-**Status (Week 6):** Base `llama3.1:8b` via Ollama, **not yet fine-tuned**. All verdicts are from **Ollama (via `llm/client.py`)**, not hardcoded — you can verify by `curl` with `OPENAI_MODEL=llama3.1:8b` and checking `verdict.model` field. Hardcoded `_template_verdict` is only the offline fallback when `ollama serve` is down.
+**Status (Week 6):** Base `qwen2.5:3b` via Ollama, **not yet fine-tuned**. All verdicts are from **Ollama (via `llm/client.py`)**, not hardcoded — you can verify by `curl` with `OPENAI_MODEL=qwen2.5:3b` and checking `verdict.model` field. Hardcoded `_template_verdict` is only the offline fallback when `ollama serve` is down.
 
 **Goal Sem 8:** Fine-tune a small adapter (QLoRA, ~50MB) on CERT insider-threat extraction → reasoning, then serve as `cybergraphrag:ft` (still Ollama, still `git clone && ./run.sh`). Week 12 will ingest **100%** of `data/demo/` (or full `data/raw/r4.2` if you have it) — same `scripts/build_graph_from_cert.py` with larger limits.
 
@@ -11,10 +11,10 @@
 ```bash
 # Start API with Ollama (see docs/OLLAMA.md)
 ollama serve &  # or docker compose up -d ollama
-ollama pull llama3.1:8b
-OPENAI_MODEL=llama3.1:8b .venv/bin/uvicorn api.main:app --reload &
+ollama pull qwen2.5:3b
+OPENAI_MODEL=qwen2.5:3b .venv/bin/uvicorn api.main:app --reload &
 curl -X POST http://localhost:8000/incidents/analyze -H "Content-Type: application/json" -d '{"entity":"AAM0658","query":"Why is user linked to host?"}' | jq .verdict.model
-# → "llama3.1:8b" (live)  vs  "template-fallback" (offline)
+# → "qwen2.5:3b" (live)  vs  "template-fallback" (offline)
 ```
 
 `reasoning/verdict_generator.py:1` now calls `LLMClient(provider=openai, base_url=http://localhost:11434/v1)` via `llm/client.py:1`. If `OPENAI_API_BASE` is unreachable, it falls back to `_template_verdict` (grounded but not LLM).
@@ -79,7 +79,7 @@ Hardware: 8B 4-bit QLoRA fits on 16GB RAM + 8GB VRAM (Colab free T4 works). For 
 ```bash
 # Create Ollama model from adapter
 ollama create cybergraphrag:ft -f Modelfile.finetuned
-# Modelfile.finetuned: FROM llama3.1:8b + ADAPTER ./adapters/cybergraphrag-lora
+# Modelfile.finetuned: FROM qwen2.5:3b + ADAPTER ./adapters/cybergraphrag-lora
 # Update .env:
 echo "OPENAI_MODEL=cybergraphrag:ft" >> .env
 # Restart API — verdict.model will now be cybergraphrag:ft
@@ -99,6 +99,6 @@ Push to teammates: `ollama push` to private registry or export `GGUF` to `huggin
 
 ## 5) Is the Model Trained Now?
 
-No — current `llama3.1:8b` is **base, instruct-tuned by Meta**, not on CERT. It works zero-shot via prompts (`extraction/prompts/extract.txt`, `reasoning/verdict_generator.py` system prompt + STIX lookup). Fine-tune (above) will teach it CERT-specific patterns and reduce hallucination, but is optional for Week 6 demo. All results you see now are from Ollama (check `model` field) unless Ollama is down (then `template-fallback`).
+No — current `qwen2.5:3b` is **base, instruct-tuned by Meta**, not on CERT. It works zero-shot via prompts (`extraction/prompts/extract.txt`, `reasoning/verdict_generator.py` system prompt + STIX lookup). Fine-tune (above) will teach it CERT-specific patterns and reduce hallucination, but is optional for Week 6 demo. All results you see now are from Ollama (check `model` field) unless Ollama is down (then `template-fallback`).
 
 For immediate robustness, keep Ollama running; fallback is only for CI/offline.

@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings:
-    # Ollama-first: default to local llama3.1:8b via OpenAI-compatible endpoint
+    # Ollama-first: default to Qwen (low-RAM, 1.9GB for 3b, 396MB for 0.5b) via OpenAI-compatible endpoint
     LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai")
     LLM_API_KEY = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY", "ollama"))
-    LLM_MODEL = os.getenv("LLM_MODEL", os.getenv("OPENAI_MODEL", "llama3.1:8b"))
+    LLM_MODEL = os.getenv("LLM_MODEL", os.getenv("OPENAI_MODEL", "qwen2.5:3b"))
     OPENAI_API_BASE = os.getenv("OPENAI_API_BASE", "http://localhost:11434/v1")
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
     ACTION_AUTO_THRESHOLD = float(os.getenv("ACTION_AUTO_THRESHOLD", "0.85"))

@@ -1,6 +1,7 @@
-# Ollama Modelfile for CyberGraphRAG — llama3.1:8b base
+# Ollama Modelfile for CyberGraphRAG — qwen2.5:3b base (low-RAM, 1.9GB)
+# For 2GB VMs: use qwen2.5:0.5b (396MB). For 8GB: qwen2.5:7b or llama3.1:8b also work.
 # Usage: ollama create cybergraphrag -f Modelfile && ollama run cybergraphrag
-FROM llama3.1:8b
+FROM qwen2.5:3b
 
 # Extraction + reasoning are JSON-heavy; keep temp low for deterministic JSON
 PARAMETER temperature 0.1
@@ -13,5 +14,5 @@ Always respond with valid JSON only when asked for JSON. Map behaviors to MITRE 
 Be grounded: only claim what the graph evidence supports."""
 
 # For Sem8 fine-tune, create Modelfile.finetuned:
-# FROM llama3.1:8b
+# FROM qwen2.5:3b
 # ADAPTER ./adapters/cybergraphrag-lora

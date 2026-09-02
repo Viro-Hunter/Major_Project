@@ -1,6 +1,6 @@
 .PHONY: setup run test pull-model docker-up docker-down clean
 
-MODEL ?= llama3.1:8b
+MODEL ?= qwen2.5:3b
 
 setup:
 	bash scripts/setup.sh --model $(MODEL)

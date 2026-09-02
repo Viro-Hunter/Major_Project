@@ -49,12 +49,17 @@ def _ollama_verdict(subgraph: Dict, query: str) -> Dict | None:
         if text.startswith("```"):
             text = "\n".join(l for l in text.splitlines() if not l.strip().startswith("```"))
         data = json.loads(text)
-        # Validate + compute risk via grounded scorer (model proposes, we calibrate)
+        # Validate
         narrative = data.get("narrative") or data.get("explanation") or ""
+        if not narrative or len(narrative.strip()) < 10:
+            # Small models sometimes return empty — treat as failure to trigger fallback
+            return None
         risk = float(data.get("risk_score", score_risk(subgraph)))
         conf = float(data.get("confidence", 0.8))
         ev = int(data.get("evidence_edges", len(subgraph.get("edges", []))))
-        # Groundedness check: ensure narrative mentions at least one real edge type
+        # Clamp risk: if model says 0 but edges exist, use calibrated risk
+        if risk == 0 and len(subgraph.get("edges", [])) > 0:
+            risk = score_risk(subgraph)
         grounded = True
         return {
             "narrative": narrative,
@@ -71,7 +76,7 @@ def _ollama_verdict(subgraph: Dict, query: str) -> Dict | None:
 
 
 def generate_verdict(subgraph: Dict, query: str) -> Dict:
-    """Primary: Ollama llama3.1:8b via llm/client.py — NOT hardcoded."""
+    """Primary: Ollama qwen2.5:3b via llm/client.py — NOT hardcoded."""
     # Try Ollama first (free, local). If it fails, fall back to deterministic template
     ollama_result = _ollama_verdict(subgraph, query)
     if ollama_result is not None:

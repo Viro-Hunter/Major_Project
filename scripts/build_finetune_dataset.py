@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build SFT JSONL for fine-tuning llama3.1:8b on CERT extraction + reasoning.
+"""Build SFT JSONL for fine-tuning qwen2.5:3b on CERT extraction + reasoning.
 
 Samples event windows from data/demo/*.csv and pairs them with gold
 entities/relations (via graph/schema) and verdicts. Output is ShareGPT-style

@@ -2,7 +2,7 @@
 # 1) Train adapter with scripts/build_finetune_dataset.py + axolotl/unsloth
 # 2) Export GGUF or adapter, then:
 # ollama create cybergraphrag:ft -f Modelfile.finetuned
-FROM llama3.1:8b
+FROM qwen2.5:3b
 ADAPTER ./adapters/cybergraphrag-lora
 
 PARAMETER temperature 0.1

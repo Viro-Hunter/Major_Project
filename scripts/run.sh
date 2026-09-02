@@ -19,7 +19,7 @@ if [ "${LLM_PROVIDER:-openai}" = "openai" ] && [[ "${OPENAI_API_BASE:-}" == *"11
     echo "WARN: Ollama not reachable at ${OPENAI_API_BASE:-http://localhost:11434/v1} — API will use rule-based fallback."
     echo "Start Ollama: ollama serve  OR  docker compose up -d ollama"
   else
-    echo "Ollama reachable — model: ${OPENAI_MODEL:-llama3.1:8b}"
+    echo "Ollama reachable — model: ${OPENAI_MODEL:-qwen2.5:3b}"
   fi
 fi
 

@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # CyberGraphRAG — download-and-run setup for any PC (WSL / macOS / Linux / Windows)
-# Usage: chmod +x scripts/setup.sh && ./scripts/setup.sh [--model llama3.1:8b]
+# Usage: chmod +x scripts/setup.sh && ./scripts/setup.sh [--model qwen2.5:3b]
 
-MODEL="${1:-llama3.1:8b}"
+MODEL="${1:-qwen2.5:3b}"
 if [[ "$1" == --model ]]; then MODEL="$2"; fi
 
 echo "==> [1/5] Checking prerequisites..."
@@ -67,7 +67,7 @@ fi
 echo ""
 echo "✅ Setup complete — everything automatic."
 echo "  Fine-tune? NOT needed daily. It's ONE-TIME in Sem 8, optional."
-echo "  Base llama3.1:8b already works for Week 6 demo."
+echo "  Base qwen2.5:3b already works for Week 6 demo."
 echo "Next: ./scripts/run.sh  OR  docker compose up --build"
 echo "  API: http://localhost:8000/docs  |  Dashboard: http://localhost:5173"
 echo "  Test: .venv/bin/pytest -q  (70 tests, no Ollama needed)"
