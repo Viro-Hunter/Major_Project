@@ -6,4 +6,4 @@ python-dotenv
 pytest
 anthropic
 openai
-pydanticopenai
+pydantic-openai
