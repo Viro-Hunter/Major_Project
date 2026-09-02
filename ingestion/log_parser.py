@@ -11,13 +11,23 @@ need updating.
 """
 from __future__ import annotations
 
+import csv
+import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, Optional
+from pathlib import Path
+from typing import Any, Optional, List
 
+import pandas as pd
 from pydantic import BaseModel, Field
 
 from graph.schema import parse_event_timestamp
+
+# Also support advanced pipeline's schemas.Event for parse_cert_log
+try:
+    from ingestion.schemas import Event as AdvancedEvent
+except ImportError:
+    AdvancedEvent = None
 
 
 class LogType(str, Enum):
@@ -145,3 +155,95 @@ def parse_row(log_type: LogType, row: dict[str, Any]) -> Event:
     if log_type not in PARSERS:
         raise ValueError(f"unknown log type: {log_type}")
     return PARSERS[log_type](row)
+
+
+# ---------------------------------------------------------------------------
+# Advanced pipeline helpers (merged from local stash) — keep for dashboard API
+# ---------------------------------------------------------------------------
+
+def _parse_ts(val: str) -> datetime:
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%m/%d/%Y %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%m/%d/%Y %H:%M"):
+        try:
+            return datetime.strptime(str(val).strip(), fmt)
+        except Exception:
+            continue
+    try:
+        return pd.to_datetime(val).to_pydatetime()
+    except Exception:
+        return datetime.utcnow()
+
+
+def parse_cert_log(path: str) -> List[Any]:
+    """Advanced helper: parse CERT csv with pandas into AdvancedEvent (ingestion.schemas.Event)."""
+    if AdvancedEvent is None:
+        raise ImportError("ingestion.schemas not available")
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"Log file not found: {path}")
+    try:
+        df = pd.read_csv(p, nrows=100000)
+    except Exception:
+        df = pd.read_csv(p, engine="python", on_bad_lines="skip")
+    df.columns = [c.strip().lower() for c in df.columns]
+    events: List[Any] = []
+    for idx, row in df.iterrows():
+        rd = {k: (None if pd.isna(v) else v) for k, v in row.to_dict().items()}
+        user = str(rd.get("user") or rd.get("user_id") or rd.get("employee") or rd.get("from") or "unknown").strip()
+        if user == "None":
+            user = "unknown"
+        action = str(rd.get("activity") or rd.get("action") or rd.get("operation") or rd.get("event") or "unknown").strip()
+        ts_raw = rd.get("date") or rd.get("timestamp") or rd.get("time") or rd.get("datetime") or datetime.utcnow().isoformat()
+        ts = _parse_ts(str(ts_raw))
+
+        def clean(v):
+            if v is None or (isinstance(v, float) and pd.isna(v)):
+                return None
+            s = str(v).strip()
+            if s == "" or s.lower() == "nan" or s == "None":
+                return None
+            return s
+
+        target = clean(rd.get("target") or rd.get("filename") or rd.get("file") or rd.get("to") or rd.get("url"))
+        host = clean(rd.get("pc") or rd.get("host") or rd.get("machine"))
+        src_ip = clean(rd.get("src_ip") or rd.get("ip"))
+        events.append(
+            AdvancedEvent(
+                event_id=str(rd.get("id") or uuid.uuid4()),
+                timestamp=ts,
+                user_id=user,
+                action=action,
+                target=target,
+                host=host,
+                src_ip=src_ip,
+                dst_ip=clean(rd.get("dst_ip")),
+                details=(str(rd.get("details") or rd.get("content") or "")[:500] or None) if clean(rd.get("details") or rd.get("content")) else None,
+                raw={k: str(v) for k, v in rd.items() if v is not None},
+            )
+        )
+    return events
+
+
+def parse_json_logs(path: str) -> List[Any]:
+    import json
+
+    if AdvancedEvent is None:
+        raise ImportError("ingestion.schemas not available")
+    p = Path(path)
+    data = json.loads(p.read_text())
+    if isinstance(data, dict):
+        data = [data]
+    events = []
+    for item in data:
+        events.append(
+            AdvancedEvent(
+                event_id=str(item.get("event_id") or uuid.uuid4()),
+                timestamp=_parse_ts(str(item.get("timestamp") or datetime.utcnow().isoformat())),
+                user_id=str(item.get("user_id") or item.get("user") or "unknown"),
+                action=str(item.get("action") or "unknown"),
+                target=item.get("target"),
+                host=item.get("host"),
+                src_ip=item.get("src_ip"),
+                raw=item,
+            )
+        )
+    return events

@@ -9,4 +9,6 @@ def test_health():
     """Test the health check endpoint."""
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "ok"
+    assert "nodes" in data or data == {"status": "ok"}

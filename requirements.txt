@@ -1,5 +1,5 @@
 fastapi
-uvicorn
+uvicorn[standard]
 networkx
 pandas
 python-dotenv
@@ -7,3 +7,6 @@ pytest
 anthropic
 openai
 pydantic-openai
+httpx
+pydantic
+python-multipart

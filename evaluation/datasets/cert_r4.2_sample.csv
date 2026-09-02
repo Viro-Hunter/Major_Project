@@ -1,0 +1,9 @@
+date,user,pc,activity,filename,src_ip
+2024-01-15 02:30:00,d.kapoor,PC-ADMIN-01,File Copy,C:\data\secrets.zip,192.168.1.50
+2024-01-15 02:35:00,d.kapoor,PC-ADMIN-01,PrivEsc to Admin,,
+2024-01-15 03:00:00,d.kapoor,PC-ADMIN-01,Network Connect,10.0.0.5,192.168.1.50
+2024-01-15 09:00:00,a.sharma,PC-002,Logon,,
+2024-01-15 09:05:00,a.sharma,PC-002,File Access,C:\projects\report.pdf,
+2024-01-15 11:00:00,d.kapoor,PC-ADMIN-01,Email Send,external@attacker.com,
+2024-01-16 02:10:00,r.singh,PC-003,Failed Logon,,
+2024-01-16 02:12:00,r.singh,PC-003,Failed Logon,,

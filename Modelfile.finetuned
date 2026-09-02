@@ -1,0 +1,14 @@
+# Template for Sem8 fine-tuned model (QLoRA)
+# 1) Train adapter with scripts/build_finetune_dataset.py + axolotl/unsloth
+# 2) Export GGUF or adapter, then:
+# ollama create cybergraphrag:ft -f Modelfile.finetuned
+FROM llama3.1:8b
+ADAPTER ./adapters/cybergraphrag-lora
+
+PARAMETER temperature 0.1
+PARAMETER top_p 0.9
+PARAMETER num_ctx 8192
+
+SYSTEM """You are CyberGraphRAG-FT, fine-tuned on CERT insider-threat extraction.
+Extract entities/relations as JSON and generate grounded verdicts with risk scores.
+Always cite graph edges; never hallucinate."""

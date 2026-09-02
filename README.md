@@ -32,7 +32,7 @@
 | **Backend API** | Python 3.11, FastAPI | Type-safe, async-ready, fast to iterate |
 | **Graph Store** | NetworkX (prototype) / Neo4j (production) | In-memory for semester prototype; Neo4j for scale |
 | **Vector Store** | Chroma / FAISS | Lightweight, file-based, no server overhead |
-| **LLM Integration** | Anthropic Claude / OpenAI GPT | High reasoning quality; templated prompts for consistency |
+| **LLM Integration** | **Ollama `llama3.1:8b` (default, local, free)** · Anthropic Claude / OpenAI GPT (optional) | Local-first via OpenAI-compatible `http://localhost:11434/v1`; see `docs/OLLAMA.md`. Fine-tune template `Modelfile.finetuned` for Sem 8. |
 | **Dataset** | CERT r4.2/r5.2 + synthetic scenarios | Realistic insider-threat logs; hand-crafted demos |
 | **Frontend** | React + Cytoscape.js / vis-network | Real-time graph visualization, incident queue UI |
 | **Monitoring & Logs** | PostgreSQL + audit tables | Compliance trail; optional distributed tracing |
@@ -206,11 +206,15 @@ curl -X POST http://localhost:8000/incidents/analyze \
 ### Environment Variables
 
 ```bash
-# LLM Configuration
-LLM_PROVIDER=anthropic  # or openai
-ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_API_KEY=sk-...
-LLM_MODEL=claude-3-5-sonnet  # or gpt-4-turbo
+# LLM Configuration — default is local Ollama (free, no key)
+LLM_PROVIDER=openai
+OPENAI_API_BASE=http://localhost:11434/v1
+OPENAI_API_KEY=ollama
+OPENAI_MODEL=llama3.1:8b
+# Paid fallback (optional):
+# LLM_PROVIDER=anthropic
+# ANTHROPIC_API_KEY=sk-ant-...
+# LLM_MODEL=claude-3-5-sonnet
 
 # Graph Store
 GRAPH_STORE_TYPE=networkx  # or neo4j

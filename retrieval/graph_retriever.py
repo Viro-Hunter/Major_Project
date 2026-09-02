@@ -1,8 +1,7 @@
-"""Question-aware retrieval over the NetworkX graph store."""
+"""Question-aware retrieval over the NetworkX graph store — hybrid."""
 from __future__ import annotations
 
 import re
-from collections import deque
 from typing import Any
 
 import networkx as nx
@@ -34,12 +33,7 @@ def retrieve_subgraph(
     max_hops: int = DEFAULT_MAX_HOPS,
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> dict[str, Any]:
-    """Retrieve a confidence-pruned neighborhood and rank root-to-node paths.
-
-    BFS runs over an undirected view so a relationship can be investigated from
-    either endpoint, while returned edges retain their original direction.  The
-    optional limits make the v1 implementation bounded and easy to tune.
-    """
+    """Retrieve a confidence-pruned neighborhood and rank root-to-node paths."""
     if max_hops < 0:
         raise ValueError("max_hops must be non-negative")
     if not 0.0 <= confidence_threshold <= 1.0:
@@ -80,3 +74,25 @@ def retrieve_subgraph(
 
     paths.sort(key=lambda path: (-path["score"], path["hops"], path["nodes"][-1]))
     return {"subgraph": subgraph, "paths": paths, "max_hops": max_hops, "confidence_threshold": confidence_threshold}
+
+
+# Advanced pipeline helper
+def get_entity_subgraph(store: GraphStore, entity: str, hops: int = 2, query: str = ""):
+    """Advanced helper: return dict nodes/edges for dashboard (compatible with store.get_subgraph_dict)."""
+    # Prefer the store's dict helper if available
+    if hasattr(store, "get_subgraph_dict"):
+        return store.get_subgraph_dict(entity, hops=hops)
+    # Fallback: use retrieve_subgraph with empty question and convert
+    if entity not in store.graph:
+        return {"nodes": [], "edges": []}
+    result = retrieve_subgraph(entity, query or "", store, max_hops=hops)
+    # result["subgraph"] is MultiDiGraph, convert to dict
+    g = result["subgraph"]
+    nodes = [{"id": n, **dict(g.nodes[n])} for n in g.nodes]
+    edges = []
+    for u, v, k, data in g.edges(keys=True, data=True):
+        e = {"source": u, "target": v, "key": k, **data}
+        if "relation" not in e and "type" in e:
+            e["relation"] = e["type"]
+        edges.append(e)
+    return {"nodes": nodes, "edges": edges}
