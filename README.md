@@ -379,7 +379,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 
 - **Issues:** Use [GitHub Issues](https://github.com/Viro-Hunter/Major_Project/issues) for bugs and feature requests
 - **Discussions:** [GitHub Discussions](https://github.com/Viro-Hunter/Major_Project/discussions) for questions and ideas
-- **Email:** [maintainer-email@example.com](mailto:maintainer-email@example.com)
+- **Email:** [tabrez@realitykernel.dev](mailto:tabrez@realitykernel.dev)
 
 ---
 
@@ -389,7 +389,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 - **FastAPI community** for the excellent web framework
 - **NetworkX team** for the graph library
 - **Anthropic & OpenAI** for powerful LLM capabilities
-
+- **Qwen & Ollama** for their open-source models
 ---
 
 ## Roadmap
