@@ -40,81 +40,57 @@
 
 ### System Architecture Diagram
 
-```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│                        Security Event Stream                                 │
-│                    (CERT Logs, Syslog, EDR Feeds)                            │
-└────────────────────────────┬────────────────────────────────────────────────────┘
-                             │
-                    ┌────────▼────────┐
-                    │   Ingestion     │
-                    │  log_parser.py  │  ◄─── Replay with timestamps
-                    │stream_simulator │
-                    └────────┬────────┘
-                             │
-                    ┌────────▼──────────┐
-                    │   Extraction      │
-                    │entity_extractor.py│  ◄─── LLM: Event → Entities
-                    │    schema.py      │       + Relations (w/ types)
-                    └────────┬──────────┘
-                             │
-          ┌──────────────────▼──────────────────┐
-          │                                      │
-    ┌─────▼──────┐                    ┌─────────▼──────┐
-    │ Graph Store │                    │ Vector Store   │
-    │ (NetworkX/  │◄─── confidence ───►│  (Chroma/FAISS)│
-    │  Neo4j)     │      scoring       │ (fallback)     │
-    │ graph_store │      + decay       │                │
-    │ updater.py  │                    └────────────────┘
-    └──────┬──────┘
-           │
-      ┌────▼───────────────────────┐
-      │      Retrieval Router       │
-      │  Classify Query Type:       │
-      │  • Structural (graph)       │
-      │  • Lookup (vector)          │
-      │  • Hybrid (both)            │
-      └────┬──────────────────┬─────┘
-           │                  │
-   ┌───────▼─────┐   ┌────────▼────────┐
-   │   Graph      │   │  Vector         │
-   │  Retriever   │   │  Retriever      │
-   │  (traverse   │   │  (semantic      │
-   │   subgraphs) │   │   search)       │
-   └───────┬──────┘   └────────┬────────┘
-           │                   │
-           └─────────┬─────────┘
-                     │
-           ┌─────────▼──────────┐
-           │ Reasoning Engine   │
-           │ verdict_generator  │  ◄─── LLM: Subgraph → Narrative
-           │groundedness_chk    │       + Risk Score + Evidence Links
-           └─────────┬──────────┘
-                     │
-           ┌─────────▼──────────┐
-           │  Action Gating     │
-           │  gate.py           │
-           │  ├─ Threshold      │
-           │  ├─ Auto-execute   │
-           │  └─ Analyst queue  │
-           └─────────┬──────────┘
-                     │
-    ┌────────────────┴─────────────────┐
-    │                                   │
-┌───▼──────────────┐      ┌─────────────▼─────┐
-│  Simulated       │      │  Audit Log &      │
-│  Actions         │      │  Compliance Trail │
-│ (block, reauth)  │      │  (PostgreSQL)     │
-└──────────────────┘      └───────────────────┘
-           │                    │
-           └────────┬───────────┘
-                    │
-           ┌────────▼─────────┐
-           │  React Dashboard │
-           │  • Graph View    │
-           │  • Incident Q    │
-           │  • Metrics Panel │
-           └──────────────────┘
+```mermaid
+flowchart TD
+    A["Security Event Stream<br/>(CERT Logs, Syslog, EDR Feeds)"] --> B
+ 
+    subgraph B["Ingestion"]
+        B1["log_parser.py"]
+        B2["stream_simulator"]
+    end
+ 
+    B --> C
+ 
+    subgraph C["Extraction"]
+        C1["entity_extractor.py<br/>(LLM: Event → Entities + Relations)"]
+        C2["schema.py"]
+    end
+ 
+    C --> D["Graph Store<br/>(NetworkX / Neo4j)<br/>graph_store_updater.py"]
+    C --> E["Vector Store<br/>(Chroma / FAISS fallback)"]
+    D <-->|confidence scoring + decay| E
+ 
+    D --> F
+    E --> F
+ 
+    subgraph F["Retrieval Router"]
+        F1["Classify Query Type:<br/>• Structural (graph)<br/>• Lookup (vector)<br/>• Hybrid (both)"]
+    end
+ 
+    F --> G["Graph Retriever<br/>(traverse subgraphs)"]
+    F --> H["Vector Retriever<br/>(semantic search)"]
+ 
+    G --> I
+    H --> I
+ 
+    subgraph I["Reasoning Engine"]
+        I1["verdict_generator<br/>(LLM: Subgraph → Narrative)"]
+        I2["groundedness_chk"]
+    end
+ 
+    I --> J
+ 
+    subgraph J["Action Gating - gate.py"]
+        J1["Threshold"]
+        J2["Auto-execute"]
+        J3["Analyst queue"]
+    end
+ 
+    J --> K["Simulated Actions<br/>(block, reauth)"]
+    J --> L["Audit Log & Compliance Trail<br/>(PostgreSQL)"]
+ 
+    K --> M["React Dashboard<br/>• Graph View<br/>• Incident Queue<br/>• Metrics Panel"]
+    L --> M
 ```
 
 ---
