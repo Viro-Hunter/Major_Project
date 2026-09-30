@@ -110,3 +110,19 @@ def test_edge_shapes_supported():
     as_ids = {"edges": ["e1", "e2"]}
     for sg in (as_mapping, as_ids):
         assert check_groundedness(make_verdict(["e1"]), sg)["groundedness"]["status"] == "grounded"
+
+
+def test_edges_without_ids_get_positional_ids():
+    from reasoning.groundedness_checker import indexed_edge_ids, verify_verdict
+
+    sg = {"edges": [{"source": "a", "target": "b"}, {"source": "b", "target": "c"}]}
+    assert indexed_edge_ids(sg) == ["e0", "e1"]
+    assert verify_verdict({"cited_edges": ["e0", "e1"]}, sg)
+    assert not verify_verdict({"cited_edges": ["e7"]}, sg)
+
+
+def test_legacy_grounded_flag_is_updated():
+    result = check_groundedness({"cited_edges": ["zzz"], "risk_score": 0.5, "grounded": True}, SUBGRAPH)
+    assert result["grounded"] is False
+    ok = check_groundedness({"cited_edges": ["e1"], "risk_score": 0.5, "grounded": True}, SUBGRAPH)
+    assert ok["grounded"] is True
