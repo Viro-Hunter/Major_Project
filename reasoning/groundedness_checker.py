@@ -45,19 +45,20 @@ def _edge_id(edge: Any) -> str | None:
     return None
 
 
-def get_edge_ids(subgraph: Any) -> set[str]:
-    """Return the set of edge ids present in ``subgraph``.
-
-    Accepts a dict or object exposing ``edges`` as: a mapping keyed by id, or an
-    iterable of ids / dicts / objects carrying ``id`` or ``edge_id``.
-    """
+def indexed_edge_ids(subgraph: Any) -> list[str]:
+    """Edge ids in subgraph order. Edges without an id/edge_id get the stable
+    positional id ``e<index>`` so generator and checker always agree."""
     edges = subgraph.get("edges") if isinstance(subgraph, Mapping) else getattr(subgraph, "edges", None)
     if edges is None:
-        return set()
+        return []
     if isinstance(edges, Mapping):
-        return {str(k) for k in edges}
-    ids = (_edge_id(e) for e in edges)
-    return {i for i in ids if i is not None}
+        return [str(k) for k in edges]
+    return [_edge_id(e) or f"e{i}" for i, e in enumerate(edges)]
+
+
+def get_edge_ids(subgraph: Any) -> set[str]:
+    """Set of edge ids present in ``subgraph`` (see ``indexed_edge_ids``)."""
+    return set(indexed_edge_ids(subgraph))
 
 
 def find_missing_edges(verdict: Mapping, subgraph: Any) -> list[str]:
@@ -105,6 +106,8 @@ def _annotate(verdict: dict, status: str, attempts: int, missing: list[str], ava
         "missing_edges": missing,
         "verified_edges": [str(c) for c in verdict.get("cited_edges") or [] if str(c) in available],
     }
+    if "grounded" in verdict:  # keep the legacy flag truthful
+        verdict["grounded"] = status != "unverified"
     return verdict
 
 
@@ -149,3 +152,8 @@ def check_groundedness(
     _downgrade(current)
     _append_unverified(current)
     return _annotate(current, "unverified", retries, missing, available)
+
+
+def verify_verdict(verdict: Mapping, subgraph: Any) -> bool:
+    """Backward-compatible boolean check (True if every cited edge exists)."""
+    return not find_missing_edges(verdict, subgraph)
