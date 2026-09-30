@@ -13,7 +13,7 @@ from retrieval.graph_retriever import get_entity_subgraph, retrieve_subgraph
 from retrieval.router import classify_query
 from retrieval.vector_retriever import semantic_search
 from reasoning.verdict_generator import generate_verdict
-from reasoning.groundedness_checker import verify_verdict
+from reasoning.groundedness_checker import check_groundedness
 from action.gate import should_auto_execute
 from action.audit_log import log_action
 
@@ -65,10 +65,30 @@ async def analyze(req: AnalyzeRequest):
     if qtype in ("lookup", "hybrid"):
         ranked = semantic_search(req.query, subgraph, top_k=10)
         subgraph["_ranked"] = ranked
+
     verdict = generate_verdict(subgraph, req.query)
-    grounded = verify_verdict(verdict, subgraph)
+
+    # Required groundedness gate: verify cited edges, retry up to 2x, else downgrade + [unverified]
+    def regenerate(sg, allowed_edge_ids, instruction):
+        return generate_verdict(sg, req.query, extra_instruction=instruction)
+
+    verdict = check_groundedness(verdict, subgraph, regenerate=regenerate)
+    grounded = verdict["groundedness"]["status"] != "unverified"
+
+    # Gate and audit log now see the checked (possibly downgraded) verdict
     decision = should_auto_execute(verdict["risk_score"])
-    log_action("analyze", verdict, executed_by="api", status=decision, details={"entity": req.entity, "query": req.query, "qtype": qtype})
+    log_action(
+        "analyze",
+        verdict,
+        executed_by="api",
+        status=decision,
+        details={
+            "entity": req.entity,
+            "query": req.query,
+            "qtype": qtype,
+            "groundedness": verdict["groundedness"],
+        },
+    )
     return {
         "entity": req.entity,
         "query": req.query,
