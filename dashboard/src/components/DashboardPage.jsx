@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import EntityGraph from './EntityGraph';
 import Timeline from './Timeline';
+import GroundednessBadge from './GroundednessBadge';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -119,6 +120,10 @@ export default function DashboardPage() {
     if (score >= 0.4) return 'MEDIUM';
     return 'LOW';
   };
+
+  // Groundedness: cited edge ids only match the subgraph returned by the analyze call
+  const citedSet = new Set((result?.verdict?.cited_edges || []).map(String));
+  const showCited = !!result && result.subgraph === subgraph;
 
   const isFallback = result?.verdict?.model === 'template-fallback';
   const modelName = result?.verdict?.model || (isFallback ? 'template-fallback' : 'unknown');
@@ -341,9 +346,11 @@ export default function DashboardPage() {
                 {result.decision?.toUpperCase()} • {modelName}
               </span>
             </div>
+            <GroundednessBadge verdict={result.verdict} />
             <p style={{ margin: '8px 0', color: '#1e293b', lineHeight: 1.5 }}>{result.verdict?.narrative}</p>
             <small style={{ color: '#64748b' }}>
-              Query type: <b>{result.query_type}</b> • Grounded: {String(result.grounded)} • Edges: {result.verdict?.evidence_edges}
+              Query type: <b>{result.query_type}</b> • Edges: {result.verdict?.evidence_edges}
+              {showCited && ' • Cited edges highlighted below'}
             </small>
           </div>
         )}
@@ -379,20 +386,25 @@ export default function DashboardPage() {
               <div style={{ maxHeight: 280, overflow: 'auto', border: '1px solid #f1f5f9', borderRadius: 10 }}>
                 <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
                   <thead style={{ position: 'sticky', top: 0, background: '#f8fafc' }}>
-                    <tr><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Source</th><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Relation</th><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Target</th><th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Conf</th></tr>
+                    <tr><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>ID</th><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Source</th><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Relation</th><th style={{ textAlign: 'left', padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Target</th><th style={{ padding: '8px 10px', borderBottom: '1px solid #e2e8f0' }}>Conf</th></tr>
                   </thead>
                   <tbody>
                     {subgraph.edges?.length ? (
-                      subgraph.edges.map((e, i) => (
-                        <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '7px 10px' }}>{e.source}</td>
-                          <td style={{ padding: '7px 10px' }}><span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{e.relation || e.type}</span></td>
-                          <td style={{ padding: '7px 10px' }}>{e.target}</td>
-                          <td style={{ padding: '7px 10px', textAlign: 'center' }}>{e.confidence?.toFixed ? e.confidence.toFixed(2) : e.confidence}</td>
-                        </tr>
-                      ))
+                      subgraph.edges.map((e, i) => {
+                        const eid = String(e.id ?? e.edge_id ?? `e${i}`);
+                        const cited = showCited && citedSet.has(eid);
+                        return (
+                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9', background: cited ? '#fefce8' : 'transparent' }}>
+                            <td style={{ padding: '7px 10px', fontFamily: 'monospace', fontSize: 12 }}>{eid}{cited ? ' ★' : ''}</td>
+                            <td style={{ padding: '7px 10px' }}>{e.source}</td>
+                            <td style={{ padding: '7px 10px' }}><span style={{ background: '#eff6ff', color: '#1d4ed8', padding: '2px 8px', borderRadius: 20, fontSize: 12, fontWeight: 600 }}>{e.relation || e.type}</span></td>
+                            <td style={{ padding: '7px 10px' }}>{e.target}</td>
+                            <td style={{ padding: '7px 10px', textAlign: 'center' }}>{e.confidence?.toFixed ? e.confidence.toFixed(2) : e.confidence}</td>
+                          </tr>
+                        );
+                      })
                     ) : (
-                      <tr><td colSpan={4} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>No edges for this entity/hops</td></tr>
+                      <tr><td colSpan={5} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>No edges for this entity/hops</td></tr>
                     )}
                   </tbody>
                 </table>
