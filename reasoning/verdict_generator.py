@@ -93,16 +93,19 @@ def _template_verdict(subgraph: Dict, query: str) -> Dict:
 def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = None) -> Dict | None:
     """Try Ollama via llm/client.py — returns None if offline.
 
-    Set ``CYBERGRAPHRAG_OFFLINE=1`` to skip the LLM entirely (CI, benchmarks
+    Set ``CYBERGRAPHRAG_OFFLINE=1`` to skip the .env/Ollama LLM (CI, benchmarks
     without a model) instead of paying the client's connection-retry backoff.
     """
-    if os.getenv("CYBERGRAPHRAG_OFFLINE", "").strip().lower() in ("1", "true", "yes"):
+    from llm.runtime import get_active
+
+    # A key connected from the dashboard is an explicit opt-in and overrides offline mode.
+    if get_active() is None and os.getenv("CYBERGRAPHRAG_OFFLINE", "").strip().lower() in ("1", "true", "yes"):
         return None
     try:
         from llm.client import LLMClient
 
         # Use OpenAI-compatible Ollama (default llm/client handles OPENAI_API_BASE)
-        client = LLMClient(provider=os.getenv("LLM_PROVIDER", "openai"))
+        client = LLMClient()  # dashboard connection > .env > local Ollama
         system_prompt = (
             "You are CyberGraphRAG — an insider-threat analyst. "
             "Given a subgraph (nodes/edges with MITRE ATT&CK where present) and a question, "

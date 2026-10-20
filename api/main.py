@@ -6,6 +6,7 @@ from api.routes.graph import router as graph_router
 from api.routes.incidents import router as incidents_router
 from api.routes.actions import router as actions_router
 from api.routes.metrics import router as metrics_router
+from api.routes.llm import router as llm_router
 
 app = FastAPI(title="CyberGraphRAG API", version="0.1.0", description="Insider Threat Detection via Graph-Augmented Retrieval")
 
@@ -30,6 +31,7 @@ app.include_router(graph_router)
 app.include_router(incidents_router)
 app.include_router(actions_router)
 app.include_router(metrics_router)
+app.include_router(llm_router)
 
 # bootstrap demo graph on startup if empty
 @app.on_event("startup")

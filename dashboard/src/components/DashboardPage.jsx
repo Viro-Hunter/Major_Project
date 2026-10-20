@@ -2,6 +2,9 @@ import React, { useEffect, useState, useMemo } from 'react';
 import EntityGraph from './EntityGraph';
 import Timeline from './Timeline';
 import GroundednessBadge from './GroundednessBadge';
+import ModelSettings from './ModelSettings';
+import IncidentQueue from './IncidentQueue';
+import MetricsPanel from './MetricsPanel';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -14,6 +17,7 @@ export default function DashboardPage() {
   const [subgraph, setSubgraph] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [llmStatus, setLlmStatus] = useState(null);
 
   // Dynamic entity list
   const [entities, setEntities] = useState([]);
@@ -153,6 +157,18 @@ export default function DashboardPage() {
       </header>
 
       <main style={{ maxWidth: 1180, margin: '0 auto', padding: '24px' }}>
+        <ModelSettings apiBaseUrl={API} onStatusChange={setLlmStatus} />
+
+        <IncidentQueue
+          apiBaseUrl={API}
+          selected={entityId}
+          onInvestigate={(id) => {
+            setEntityId(id);
+            setResult(null);
+            setQuery('Is this user exfiltrating data or behaving like an insider threat?');
+          }}
+        />
+
         {/* Controls - Entity with searchable dropdown */}
         <section style={{ background: 'white', borderRadius: 16, padding: 18, boxShadow: '0 4px 20px rgba(15,23,42,0.06)', border: '1px solid #e2e8f0', marginBottom: 18 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 160px', gap: 12, alignItems: 'end' }}>
@@ -287,13 +303,13 @@ export default function DashboardPage() {
             <div style={{ marginTop: 12, padding: 10, background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', fontSize: 12, color: '#475569' }}>
               <b>Model status:</b>{' '}
               {isFallback && result
-                ? '⚠️ template-fallback — Ollama not reachable (results are rule-based). Start Ollama for real LLM.'
+                ? '⚠️ template-fallback — the model did not answer (results are rule-based). Connect a key in Reasoning model above, or start Ollama.'
                 : result
                 ? `✅ ${modelName} — grounded LLM`
                 : 'Run Analyze to see model'}
               <br />
               <span style={{ fontSize: 11, color: '#64748b' }}>
-                {isFallback ? 'Start: ollama serve & ollama pull qwen2.5:3b' : 'Fine-tune once → Modelfile.finetuned → OPENAI_MODEL=cybergraphrag:ft (see docs/TRAINING.md)'}
+                {llmStatus ? `Configured: ${llmStatus.model} on ${llmStatus.label}` : 'Model status unavailable'}
               </span>
             </div>
           </div>
@@ -340,7 +356,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>
                 Verdict — <span style={{ color: riskColor(result.verdict?.risk_score) }}>{riskLabel(result.verdict?.risk_score)}</span>{' '}
-                <span style={{ fontWeight: 400, color: '#64748b' }}>Risk {result.verdict?.risk_score} • Conf {result.verdict?.confidence}</span>
+                <span style={{ fontWeight: 400, color: '#64748b' }}>Risk {result.verdict?.risk_score} • Confidence {result.verdict?.confidence_pct ?? '—'}%</span>
               </h3>
               <span style={{ padding: '4px 10px', borderRadius: 20, background: result.decision === 'auto' ? '#fee2e2' : result.decision === 'analyst' ? '#ffedd5' : '#dcfce7', color: result.decision === 'auto' ? '#991b1b' : result.decision === 'analyst' ? '#9a3412' : '#166534', fontWeight: 700, fontSize: 12 }}>
                 {result.decision?.toUpperCase()} • {modelName}
@@ -348,6 +364,24 @@ export default function DashboardPage() {
             </div>
             <GroundednessBadge verdict={result.verdict} />
             <p style={{ margin: '8px 0', color: '#1e293b', lineHeight: 1.5 }}>{result.verdict?.narrative}</p>
+            {result.verdict?.evidence_paths?.length > 0 && (
+              <div style={{ margin: '10px 0', fontSize: 13 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6 }}>Evidence trail (verified paths, strongest first)</div>
+                <ol style={{ margin: 0, paddingLeft: 20, lineHeight: 1.7 }}>
+                  {result.verdict.evidence_paths.map((p, i) => (
+                    <li key={i}>
+                      {p.nodes.map((n, j) => (
+                        <span key={j}>
+                          {j > 0 && <span style={{ color: '#64748b' }}> —{p.relations[j - 1]}→ </span>}
+                          <code>{n}</code>
+                        </span>
+                      ))}
+                      <span style={{ color: '#64748b' }}> at {p.timestamp?.replace('T', ' ')}, path confidence {(100 * p.confidence).toFixed(1)}% [{p.edge_ids.join(', ')}]</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
             <small style={{ color: '#64748b' }}>
               Query type: <b>{result.query_type}</b> • Edges: {result.verdict?.evidence_edges}
               {showCited && ' • Cited edges highlighted below'}
@@ -413,11 +447,13 @@ export default function DashboardPage() {
           </div>
         )}
 
+        <MetricsPanel apiBaseUrl={API} />
+
         <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12, color: '#64748b' }}>
           <a href={`${API}/graph/stats`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Graph stats</a>
           <a href={`${API}/metrics`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Metrics</a>
           <a href={`${API}/actions`} target="_blank" rel="noreferrer" style={{ background: 'white', padding: '8px 12px', borderRadius: 20, border: '1px solid #e2e8f0', textDecoration: 'none', color: '#0f172a' }}>Actions</a>
-          <span style={{ alignSelf: 'center' }}>• Ollama default: <code>qwen2.5:3b</code> — change via <code>.env</code> or <code>./scripts/pull_model.sh</code></span>
+          <span style={{ alignSelf: 'center' }}>• Model: {llmStatus ? `${llmStatus.model} (${llmStatus.label})` : 'unknown'}</span>
         </div>
       </main>
     </div>

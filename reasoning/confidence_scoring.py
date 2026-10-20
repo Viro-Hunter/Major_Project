@@ -54,7 +54,11 @@ def attach_confidence(verdict: Mapping[str, Any], subgraph: Mapping[str, Any], f
 
     out["propagated_confidence"] = round(conf, 4)
     out["confidence_pct"] = to_percent(conf)
-    out["evidence_paths"] = supported[:10]
+    # Show breadth first: the strongest path of each technique, then the remaining paths.
+    seen: set = set()
+    firsts = [p for p in supported if not (p["technique"] in seen or seen.add(p["technique"]))]
+    ordered = firsts + [p for p in supported if p not in firsts]
+    out["evidence_paths"] = ordered[:10]
     # Every entity on a verified evidence path (used by the benchmark's retrieval-accuracy metric).
     out["evidence_entities"] = sorted({n for p in supported for n in p["nodes"][1:-1]})
     out["evidence_techniques"] = sorted({p["technique"] for p in supported})
