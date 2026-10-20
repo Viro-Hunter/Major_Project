@@ -10,3 +10,4 @@ pydantic-openai
 httpx
 pydantic
 python-multipart
+matplotlib

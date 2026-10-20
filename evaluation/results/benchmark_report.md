@@ -1,6 +1,6 @@
 # Benchmark Report — Cyber Intelligence GraphRAG
 
-_Generated 2026-10-20T16:16:58+00:00 by `evaluation/run_benchmark.py` — do not edit by hand; re-run the script._
+_Generated 2026-10-20T16:25:33+00:00 by `evaluation/run_benchmark.py` — do not edit by hand; re-run the script._
 
 ## Setup
 
@@ -17,7 +17,7 @@ _Generated 2026-10-20T16:16:58+00:00 by `evaluation/run_benchmark.py` — do not
 | Retrieval accuracy (F1) | 0.319 | Macro-F1 of entities on verified evidence paths vs entities of each insider's malicious events |
 | Graph completeness | 100.0% | Entities in graph / entities derivable from the ingested log rows |
 | Threat-correlation precision | 0.440 | Share of asserted (user → ATT&CK technique) links that are true malicious links |
-| Response time | 3.41 s indexing · 16 ms/query | Graph build once; mean end-to-end query (retrieve → verdict → groundedness → confidence) |
+| Response time | 3.05 s indexing · 17 ms/query | Graph build once; mean end-to-end query (retrieve → verdict → groundedness → confidence) |
 | Detection effectiveness | P 0.636 · R 0.583 · F1 0.609 · FPR 0.083 | Per-user insider detection vs labels |
 
 ## Table 2 — Detection: full system vs ablation vs naive baseline
@@ -72,11 +72,11 @@ Graph completeness: 6,601 of 6,601 expected entities present.
 
 | Phase | Calls | Mean | p50 | p95 | Max |
 |---|---|---|---|---|---|
-| indexing | 1.0 | 3410.7 ms | 3410.7 ms | 3410.7 ms | 3410.7 ms |
-| retrieval | 60.0 | 10.2 ms | 7.7 ms | 17.5 ms | 55.5 ms |
-| reasoning | 60.0 | 2.1 ms | 1.4 ms | 4.8 ms | 6.8 ms |
-| groundedness | 60.0 | 1.2 ms | 0.6 ms | 1.3 ms | 21.0 ms |
-| query_total | 60.0 | 15.6 ms | 11.0 ms | 36.0 ms | 64.0 ms |
+| indexing | 1.0 | 3050.9 ms | 3050.9 ms | 3050.9 ms | 3050.9 ms |
+| retrieval | 60.0 | 11.5 ms | 8.6 ms | 17.3 ms | 80.2 ms |
+| reasoning | 60.0 | 2.2 ms | 1.5 ms | 4.6 ms | 8.2 ms |
+| groundedness | 60.0 | 0.9 ms | 0.7 ms | 1.6 ms | 3.4 ms |
+| query_total | 60.0 | 16.7 ms | 12.2 ms | 30.2 ms | 88.8 ms |
 
 ## Table 7 — Groundedness self-check (core contribution)
 

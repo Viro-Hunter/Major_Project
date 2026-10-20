@@ -97,9 +97,7 @@ flowchart TD
 
 ## 📂 Repository Structure
 
-```
-<snipped for brevity — full structure remains in repo>
-```
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the module-by-module map of the pipeline.
 
 ---
 
@@ -138,7 +136,27 @@ cd dashboard && npm install && npm run dev  # frontend
 ```
 </details>
 
-### First Query (Works Immediately, 501 nodes ready)
+### Choosing the reasoning model (OpenRouter, Claude, OpenAI, Groq, Gemini or local)
+
+Open the dashboard and use the **Reasoning model** panel at the top:
+
+1. Paste an API key. The provider is detected as you type (`sk-or-` OpenRouter, `sk-ant-` Anthropic, `sk-proj-`/`sk-` OpenAI, `gsk_` Groq, `AIza` Gemini, `xai-` xAI); you can override it.
+2. Click **Check key**. The API verifies the key with the provider.
+   - **OpenRouter with credit** → paid models are unlocked and the recommended one (newest Claude Sonnet if listed) is selected; each option shows an estimated cost per verdict and your remaining credit.
+   - **OpenRouter free tier, or credit exhausted** → only free models are listed and the strongest free model for JSON reasoning is selected automatically (large instruct models preferred; tiny, vision-only and slow "thinking" models ranked down).
+3. Change the model from the dropdown any time, and press **Send test prompt** to confirm it answers.
+
+The key stays in the API server's memory only (never written to disk, logged or sent back to the browser) and is forgotten on restart. To make it permanent put it in `.env`:
+
+```bash
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=auto        # pick the best model for this key at startup, or name one
+```
+
+Without any key the system uses local Ollama, and if no model answers it falls back to a deterministic, grounded evidence template.
+
+### First Query (Works Immediately)
 
 ```bash
 # No ingest needed — 15% CERT graph (501 nodes) auto-loads on startup.
@@ -270,31 +288,33 @@ If you rely on the demo subset in CI, point ingestion to the `data/` demo files 
 
 ## 🧪 Testing & Evaluation
 
-### Unit & Integration Tests
-
 ```bash
-# Run all tests
-pytest tests/ -v
+pytest -q                                   # 123 unit/integration tests, no API key or model needed
 
-# Run only unit tests
-pytest tests/unit/ -v
-
-# Run integration tests (requires API running)
-pytest tests/integration/ -v --tb=short
-
-# Coverage report
-pytest tests/ --cov=. --cov-report=html
+python scripts/run_pipeline_e2e.py          # Week 9: all 7 stages on 20 users, per-stage timing, exit 1 on any error
+python evaluation/run_benchmark.py          # Week 10: five metrics -> evaluation/results/benchmark_report.md
+python scripts/generate_report_assets.py    # Week 11: figures -> docs/report_assets/, tables -> docs/report_tables.md
+python scripts/demo.py --pause              # Week 12: live walkthrough for the presentation
 ```
 
-### Benchmark & Metrics
+Add `--llm` to the e2e, benchmark or demo scripts to use the configured model instead of the offline template.
 
-```bash
-# Run full evaluation suite against CERT r4.2
-python evaluation/benchmark.py --dataset cert_r4.2 --output results/latest_run.json
+**Ground truth.** The benchmark uses the official CERT r4.2 answer key when `data/raw/answers/` exists
+(`python scripts/fetch_cert_data.py answers`). Otherwise it injects seeded insider scenarios, modelled on
+the three published r4.2 scenarios, into real users' activity and says so in every report. Use the
+answer-key run for numbers you publish.
 
-# View results
-cat results/latest_run.json | jq '.metrics'
-```
+Current results (injected ground truth, 60 users / 12 insiders, offline template; see the report for all tables):
+
+| Metric | Value |
+|---|---|
+| Detection | precision 0.636, recall 0.583, F1 0.609, false-positive rate 8.3% |
+| Same without peer-prevalence discount | F1 0.462, false-positive rate 58.3% |
+| Graph completeness | 100% |
+| Threat-correlation precision | 0.440 |
+| Evidence retrieval F1 | 0.319 |
+| Response time | ~3 s indexing, ~16 ms per query |
+| Groundedness under simulated hallucination | 15/15 fabricated citations caught, 0 false alarms |
 
 ---
 

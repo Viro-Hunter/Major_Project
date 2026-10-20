@@ -1,71 +1,49 @@
-# Architecture — Graph + LLM Integration
+# Architecture
 
-This document highlights the recent design decisions and implementation details for the provider-agnostic LLM client and the graph schema / ATT&CK technique mapping added in recent work.
+This document describes the system as implemented in the repository (v1.0-sem7). Every file named here exists; `scripts/generate_report_assets.py` copies the summary below into the report.
 
-## Provider-agnostic LLM client (llm/)
+<!-- SUMMARY:START -->
+The proposed system is an explainable GraphRAG pipeline for insider-threat detection. Raw CERT r4.2 behavioural logs (logon, removable-device, file, email and web activity) are normalised into timestamped events and converted into a knowledge graph in which each event becomes a short story chain: a User is observed on a Host and touches a File, Device, Email or URL, and any behaviour matching a MITRE ATT&CK technique adds an edge to that technique together with an INDICATES edge from the specific event node, so every technique match is traceable to the event that caused it. For an analyst's question about an entity, a rule-based router chooses the retrieval depth and a bounded, confidence-pruned breadth-first retriever extracts the relevant subgraph. A large language model (local via Ollama, or any OpenRouter, Anthropic, OpenAI, Groq or Gemini model selected from the dashboard) reasons over that subgraph and must return a verdict that cites the exact edge identifiers supporting it. The core contribution is the groundedness self-check that follows: every cited edge is verified against the retrieved subgraph, ungrounded verdicts are regenerated up to twice with the permitted edge list, and verdicts that remain ungrounded have their risk reduced by 20% and are marked [unverified] rather than shown with false confidence. Finally, confidence is propagated along the verified evidence paths only, multiplying edge confidences and decaying older evidence by 0.95 per day, and behavioural risk combines the distinct techniques with a noisy-OR weighted by severity, path confidence and peer prevalence, so behaviour that most employees exhibit carries little weight. Results are presented in a React dashboard with an incident queue, interactive graph, timeline, evidence trail and evaluation metrics.
+<!-- SUMMARY:END -->
 
-Goal: let extraction and reasoning logic invoke a single interface regardless of LLM provider (Anthropic, OpenAI, or a mock for tests).
+## Pipeline
 
-Key points:
+```mermaid
+flowchart LR
+  A[CERT r4.2 CSVs] --> B[Ingestion<br/>ingestion/log_parser.py<br/>ingestion/cert_loader.py]
+  B --> C[Extraction<br/>scripts/build_graph_from_cert.py::ingest_row<br/>extraction/entity_extractor.py LLM]
+  C --> D[Knowledge graph<br/>graph/graph_store.py<br/>+ ATT&CK lookup]
+  D --> E[Router + retriever<br/>retrieval/router.py<br/>retrieval/graph_retriever.py]
+  E --> F[Verdict<br/>reasoning/verdict_generator.py]
+  F --> G[Groundedness check<br/>reasoning/groundedness_checker.py]
+  G --> H[Confidence<br/>reasoning/confidence_scoring.py<br/>graph/confidence.py]
+  H --> I[API + dashboard<br/>api/ · dashboard/]
+```
 
-- Implementation lives under the `llm/` package. The code exposes a small interface used by `extraction/entity_extractor.py` and `reasoning/verdict_generator.py`:
-  - `LLMClient` (interface / base class) — send(prompt, **options) -> LLMResponse
-  - `AnthropicLLMClient` — concrete adapter for Anthropic API
-  - `OpenAILLMClient` — concrete adapter for OpenAI API
-  - `MockLLMClient` — deterministic/local responses used by tests and CI (`tests/fixtures/mock_llm.py`)
+| Stage | Module | What it does |
+|---|---|---|
+| Ingestion | `ingestion/log_parser.py`, `ingestion/cert_loader.py` | Normalises each CERT row into an `Event`; loads per-user rows from `data/raw` or the committed `data/demo` subset |
+| Extraction | `scripts/build_graph_from_cert.py` (`ingest_row`, `build_graph_from_rows`) | Deterministic CERT extraction into story chains; `extraction/entity_extractor.py` is the LLM extractor for unstructured logs |
+| Graph | `graph/graph_store.py`, `graph/schema.py`, `data/attack_technique_lookup.json` | NetworkX `MultiDiGraph`; 8 behaviour patterns mapped to ATT&CK technique ids with severity |
+| Routing | `retrieval/router.py` | Rule-based `structural` / `lookup` / `hybrid` classifier behind a swappable `QueryClassifier` interface (Sem 8: learned classifier) |
+| Retrieval | `retrieval/graph_retriever.py` | Bounded BFS over edges above a confidence threshold; ranks paths by keyword relevance, hops and propagated confidence |
+| Reasoning | `reasoning/verdict_generator.py`, `reasoning/evidence.py` | LLM verdict with `cited_edges`; ATT&CK evidence edges are placed first in the prompt; deterministic evidence template when no model answers |
+| Groundedness | `reasoning/groundedness_checker.py` | Verify citations → regenerate ≤ 2× → downgrade 20% + `[unverified]` (see `docs/groundedness_design.md`) |
+| Confidence | `graph/confidence.py`, `reasoning/confidence_scoring.py` | Π cᵢ·0.95^ageᵢ over verified paths only; verdict label benign / suspicious (≥ 0.4) / high_risk (≥ 0.7) |
+| Action gate | `action/gate.py`, `action/audit_log.py` | Auto / analyst / ignore decision and audit trail |
+| LLM access | `llm/client.py`, `llm/providers.py`, `llm/runtime.py` | Provider-agnostic client; key auto-detection, credit check, paid-vs-free model recommendation |
+| API | `api/routes/*.py` | `/incidents/analyze`, `/incidents/query`, `/incidents/queue`, `/graph/*`, `/llm/*`, `/metrics/benchmark` |
+| Dashboard | `dashboard/src/components/*.jsx` | Model panel, incident queue, entity graph, timeline, verdict with evidence trail, metrics panel |
+| Evaluation | `evaluation/metrics.py`, `evaluation/run_benchmark.py`, `evaluation/scenarios.py` | Five Objective-5 metrics, ablation, naive baseline, groundedness fault injection |
 
-- Configuration is driven by the environment variables documented in `.env.example` and `README.md`: `LLM_PROVIDER`, `LLM_MODEL`, and provider API keys.
+## Key design decisions
 
-- Prompts are stored as templates under `extraction/prompts/` and `reasoning/prompts/`. The extraction layer performs a lightweight schema validation step after receiving an LLM response to avoid invalid entities/relations entering the graph.
+**Edge ids.** Edges in a retrieved subgraph get positional ids `e<index>` in the graph's insertion order (`reasoning.groundedness_checker.indexed_edge_ids`). Generator, checker, confidence stage and dashboard all use the same function, so a citation means the same edge everywhere.
 
-- The client implements:
-  - request/response logging (redacts secrets)
-  - retry/backoff for transient HTTP errors
-  - optional caching (configurable) to reduce API usage for repeated or deterministic prompts
+**Decay reference time.** CERT timestamps are from 2010, so decay is measured from an `as_of` time (the focus entity's newest event) rather than the wall clock, which would multiply every edge by ≈ 0.
 
-## Extraction pipeline (extraction/)
+**Peer prevalence.** A technique's contribution is multiplied by (1 − fraction of users exhibiting it). In CERT nearly every user emails attachments externally (T1567) while few log in after hours (T1078); without this discount the false-positive rate rises from 8% to 58% (see `evaluation/results/benchmark_report.md`, Table 2).
 
-- `extraction/entity_extractor.py` calls the LLM client through the common interface. The extractor:
-  1. Formats the prompt (uses `extraction/prompts/extract.txt`) with the event payload
-  2. Sends the prompt via the `LLMClient` implementation
-  3. Validates and normalizes the returned entities/relations against `extraction/schema.py`
-  4. Writes normalized entities/relations to the graph via `graph/updater.py`
+**Confidence after groundedness.** Only paths whose every edge was verified contribute confidence, so an `[unverified]` verdict reports near-zero confidence even if its narrative sounds certain.
 
-- Tests use `tests/fixtures/mock_llm.py` so extraction logic can be validated offline and in CI without external API keys.
-
-## Graph schema & ATT&CK technique lookup (graph/)
-
-- A lightweight, explicit schema was added to make relation typing and technique mapping explicit. The system now supports mapping observed behaviors and relation types to ATT&CK techniques for richer context and analyst-facing explanations.
-
-- Graph interactions are primarily performed through `graph/graph_store.py` and the incremental updater in `graph/updater.py`. Confidence, decay, and path-multiplication logic live in `graph/confidence.py`.
-
-- ATT&CK support is implemented as a lookup/mapping step that enriches relations with:
-  - technique_id (e.g., T1005)
-  - technique_name (e.g., "Data from Local System")
-  - mapping_confidence
-
-  The mapping source is a local mapping table (included in the repo under `data/` or referenced via `docs/`; see the git history for the exact file added with the dataset commit).
-
-## Groundedness & Verdict Generation (reasoning/)
-
-- `reasoning/verdict_generator.py` now leverages the provider-agnostic LLM client to produce narratives from subgraphs. The groundedness checker (`reasoning/groundedness_checker.py`) cross-validates any claim in the narrative against graph edges before a verdict is returned or recorded.
-
-- If groundedness fails, the generator will retry with stricter prompts asking the LLM to cite edges or to abstain.
-
-## Testing & CI notes
-
-- A trimmed demo subset of the CERT r4.2 dataset was added under `data/` to make CI and offline demos feasible (see recent commit history). Unit and integration tests were extended to use this dataset and a mock LLM client to avoid external API dependency during CI.
-
-- To run the full pipeline locally (with real LLMs), ensure `LLM_PROVIDER` and API keys are set in your `.env` and follow the README quick-start section.
-
-## Where to look in the code
-
-- LLM client: `llm/` (interface + providers)
-- Extraction: `extraction/entity_extractor.py`, `extraction/schema.py`, and `extraction/prompts/`
-- Graph: `graph/graph_store.py`, `graph/updater.py`, `graph/confidence.py`
-- Reasoning: `reasoning/verdict_generator.py`, `reasoning/groundedness_checker.py`
-- Tests: `tests/fixtures/mock_llm.py`, `tests/unit/`, `tests/integration/`
-
----
-
-If you'd like, I can expand this file to include sequence diagrams, example payloads, or code snippets showing the LLM client interface (LLMClient.send signature and expected LLMResponse shape).
+**Keys.** A key pasted in the dashboard is kept in API-process memory only (`llm/runtime.py`), never logged or returned in full, and overrides `.env` until the server restarts.

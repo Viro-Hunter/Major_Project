@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-20T16:16:58+00:00",
+  "generated_at": "2026-10-20T16:25:33+00:00",
   "config": {
     "mode": "auto",
     "users": 60,
@@ -38,8 +38,8 @@
     "retrieval_accuracy_f1": 0.319,
     "graph_completeness": 1.0,
     "threat_correlation_precision": 0.44,
-    "mean_query_latency_s": 0.0156,
-    "indexing_time_s": 3.411,
+    "mean_query_latency_s": 0.0167,
+    "indexing_time_s": 3.051,
     "detection_f1": 0.609,
     "detection_precision": 0.636,
     "detection_recall": 0.583,
@@ -93,43 +93,43 @@
   "response_time": {
     "indexing": {
       "count": 1.0,
-      "total_s": 3.41073,
-      "mean_s": 3.41073,
-      "p50_s": 3.41073,
-      "p95_s": 3.41073,
-      "max_s": 3.41073
+      "total_s": 3.05088,
+      "mean_s": 3.05088,
+      "p50_s": 3.05088,
+      "p95_s": 3.05088,
+      "max_s": 3.05088
     },
     "retrieval": {
       "count": 60.0,
-      "total_s": 0.61333,
-      "mean_s": 0.01022,
-      "p50_s": 0.00774,
-      "p95_s": 0.0175,
-      "max_s": 0.05554
+      "total_s": 0.68962,
+      "mean_s": 0.01149,
+      "p50_s": 0.00862,
+      "p95_s": 0.01729,
+      "max_s": 0.08015
     },
     "reasoning": {
       "count": 60.0,
-      "total_s": 0.12864,
-      "mean_s": 0.00214,
-      "p50_s": 0.00138,
-      "p95_s": 0.00481,
-      "max_s": 0.00681
+      "total_s": 0.13317,
+      "mean_s": 0.00222,
+      "p50_s": 0.00152,
+      "p95_s": 0.00462,
+      "max_s": 0.00821
     },
     "groundedness": {
       "count": 60.0,
-      "total_s": 0.0718,
-      "mean_s": 0.0012,
-      "p50_s": 0.00064,
-      "p95_s": 0.00134,
-      "max_s": 0.02099
+      "total_s": 0.05429,
+      "mean_s": 0.0009,
+      "p50_s": 0.00065,
+      "p95_s": 0.00155,
+      "max_s": 0.00342
     },
     "query_total": {
       "count": 60.0,
-      "total_s": 0.9367,
-      "mean_s": 0.01561,
-      "p50_s": 0.01101,
-      "p95_s": 0.03602,
-      "max_s": 0.06395
+      "total_s": 0.99933,
+      "mean_s": 0.01666,
+      "p50_s": 0.01217,
+      "p95_s": 0.03016,
+      "max_s": 0.0888
     }
   },
   "detection": {

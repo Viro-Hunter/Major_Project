@@ -2,6 +2,25 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.0-sem7] - 2026-10-20
+
+### Added
+- Week 9: confidence propagation (`graph/confidence.py`) — product of edge confidences with 0.95/day decay measured from the entity's newest event; evidence paths and peer-baselined behavioural risk (`reasoning/evidence.py`); confidence stage after the groundedness check that counts verified paths only (`reasoning/confidence_scoring.py`); `/incidents/queue` triage endpoint; `scripts/run_pipeline_e2e.py`.
+- Week 10: `evaluation/metrics.py` (retrieval accuracy, graph completeness, threat-correlation precision, response time, detection effectiveness), `evaluation/run_benchmark.py` with ablation, naive baseline, threshold sweep and groundedness fault injection; labelled sets from the official answer key or seeded scenarios (`evaluation/scenarios.py`).
+- Week 11: `scripts/generate_report_assets.py` (figures, captioned tables, architecture paragraph).
+- Week 12: `scripts/demo.py` live walkthrough.
+- Model connection: OpenRouter, Anthropic, OpenAI, Groq, Gemini and xAI key auto-detection, credential and credit check, paid-vs-free model recommendation (`llm/providers.py`, `api/routes/llm.py`); dashboard Reasoning model panel, Incident queue, Metrics panel, verdict confidence and evidence trail.
+
+### Fixed
+- Edge attribute `source=<log name>` overwrote the real edge source in subgraph dicts, so freshly built graphs attributed every edge to "logon"/"email"/...
+- Risk score was near-constant on CERT graphs (legacy weights only covered relation names absent from CERT).
+- Retrieval copied the whole graph per query: per-query latency 852 ms → 16 ms with identical results.
+- Email, web and logon technique matches had no INDICATES edge from the triggering event.
+
+### Changed
+- `docs/ARCHITECTURE.md` rewritten to describe the implemented system.
+- `/incidents/query` now also returns the checked verdict (Week 7 spec).
+
 ## [Unreleased]
 
 ### Added
