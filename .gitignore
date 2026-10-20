@@ -43,4 +43,5 @@ data/answers/
 
 # Dashboard node modules and build output
 dashboard/node_modules/
-dashboard/dist/
+dashboard/dist/evaluation/results/timings.csv
+evaluation/results/per_user.csv

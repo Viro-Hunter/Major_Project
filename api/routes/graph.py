@@ -7,7 +7,7 @@ from typing import Any
 import networkx as nx
 from fastapi import APIRouter, HTTPException, Query
 
-from graph.graph_store import GraphStore, store
+from graph.graph_store import GraphStore, edge_record, store
 
 router = APIRouter(tags=["graph"])
 # keep remote singleton for compatibility (was graph_store = GraphStore())
@@ -94,7 +94,7 @@ async def get_timeline(entity_id: str, limit: int = Query(50, ge=1, le=200)):
     edges = []
     for src, dst, key, data in store.graph.edges(keys=True, data=True):
         if src == entity_id or dst == entity_id:
-            edges.append({"source": src, "target": dst, "key": key, **data})
+            edges.append(edge_record(src, dst, key, data))
     # Also include 2-hop technique links via file/device
     # e.g., file → technique where file was accessed by user
     # Find files/devices accessed by user, then their technique links

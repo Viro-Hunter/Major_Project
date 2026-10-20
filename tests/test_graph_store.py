@@ -46,3 +46,16 @@ def test_to_json_round_trips():
     payload = json.loads(store.to_json())
     assert {node["id"] for node in payload["nodes"]} == {"u1", "h1", "f1", "t1"}
     assert len(payload["links"]) == 1
+
+
+def test_subgraph_dict_endpoints_not_overwritten_by_edge_attributes():
+    """Regression: CERT edges carried source=<log name>, which used to overwrite the real endpoint."""
+    from graph.graph_store import GraphStore
+
+    s = GraphStore()
+    s.add_entity({"id": "u1", "type": "User"})
+    s.add_entity({"id": "host:PC-1", "type": "Host"})
+    s.add_relation("u1", "host:PC-1", "OBSERVED_ON", 0.9, "2010-01-02T08:00:00", source="logon")
+    (edge,) = s.get_subgraph_dict("u1", hops=1)["edges"]
+    assert edge["source"] == "u1" and edge["target"] == "host:PC-1"
+    assert edge["log_source"] == "logon"

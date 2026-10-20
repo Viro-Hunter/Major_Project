@@ -6,7 +6,8 @@ from typing import Any
 
 import networkx as nx
 
-from graph.graph_store import GraphStore
+from graph.confidence import latest_timestamp, path_confidence
+from graph.graph_store import GraphStore, edge_record
 
 DEFAULT_MAX_HOPS = 2
 DEFAULT_CONFIDENCE_THRESHOLD = 0.5
@@ -42,38 +43,82 @@ def retrieve_subgraph(
     if entity_id not in graph:
         raise KeyError(f"unknown entity: {entity_id}")
 
-    filtered = nx.MultiDiGraph()
-    filtered.add_nodes_from(graph.nodes(data=True))
-    for source, target, key, data in graph.edges(keys=True, data=True):
-        if float(data.get("confidence", 1.0)) >= confidence_threshold:
-            filtered.add_edge(source, target, key=key, **data)
+    # Bounded BFS over edges that pass the confidence threshold (either direction),
+    # touching only the neighbourhood instead of copying the whole graph per query.
+    def _strong(data: dict[str, Any]) -> bool:
+        return float(data.get("confidence", 1.0)) >= confidence_threshold
 
-    undirected = filtered.to_undirected()
-    distances = nx.single_source_shortest_path_length(undirected, entity_id, cutoff=max_hops)
+    distances: dict[str, int] = {entity_id: 0}
+    frontier = [entity_id]
+    for depth in range(1, max_hops + 1):
+        nxt = []
+        for node in frontier:
+            for _, nb, data in graph.out_edges(node, data=True):
+                if nb not in distances and _strong(data):
+                    distances[nb] = depth
+                    nxt.append(nb)
+            for nb, _, data in graph.in_edges(node, data=True):
+                if nb not in distances and _strong(data):
+                    distances[nb] = depth
+                    nxt.append(nb)
+        frontier = nxt
     nodes = set(distances)
-    subgraph = filtered.subgraph(nodes).copy()
+    filtered = nx.MultiDiGraph()
+    filtered.add_nodes_from((n, graph.nodes[n]) for n in nodes)
+    for source, target, key, data in graph.edges(nodes, keys=True, data=True):
+        if target in nodes and _strong(data):
+            filtered.add_edge(source, target, key=key, **data)
+    subgraph = filtered
+    undirected = filtered.to_undirected(as_view=True)
+    shortest = nx.single_source_shortest_path(undirected, entity_id, cutoff=max_hops)
     terms = _keywords(question)
+    # Week 9: decay is measured against the newest evidence in the retrieved
+    # neighbourhood (see graph/confidence.py for why not wall-clock time).
+    # Anchor to the focus entity's own events; other users reachable at 2 hops may
+    # have much later activity that would otherwise decay this entity's evidence to ~0.
+    as_of = latest_timestamp(
+        data for u, v, data in subgraph.edges(data=True) if entity_id in (u, v)
+    ) or latest_timestamp(data for _, _, data in subgraph.edges(data=True))
     paths: list[dict[str, Any]] = []
     for target in nodes:
         if target == entity_id:
             continue
-        node_path = nx.shortest_path(undirected, entity_id, target)
+        node_path = shortest[target]
         edge_summaries = []
         matched_terms: set[str] = set()
         for left, right in zip(node_path, node_path[1:]):
-            edge = _best_edge(filtered, left, right, confidence_threshold) or _best_edge(filtered, right, left, confidence_threshold)
+            edge = _best_edge(filtered, left, right, confidence_threshold)
+            src, dst = left, right
+            if edge is None:
+                edge = _best_edge(filtered, right, left, confidence_threshold)
+                src, dst = right, left  # report the edge in its true direction
             if edge is None:
                 continue
             key, data = edge
-            edge_summaries.append({"source": left, "target": right, "key": key, **data})
+            edge_summaries.append(edge_record(src, dst, key, data))
             matched_terms.update(terms & _keywords(_attribute_text(data)))
         for node in node_path:
             matched_terms.update(terms & _keywords(_attribute_text(dict(filtered.nodes[node]))))
         score = len(matched_terms) / max(len(terms), 1)
-        paths.append({"nodes": node_path, "edges": edge_summaries, "hops": len(node_path) - 1, "score": round(score, 4), "matched_terms": sorted(matched_terms)})
+        confidence = path_confidence(edge_summaries, as_of=as_of) if edge_summaries else 0.0
+        paths.append({
+            "nodes": node_path,
+            "edges": edge_summaries,
+            "hops": len(node_path) - 1,
+            "score": round(score, 4),
+            "matched_terms": sorted(matched_terms),
+            "confidence": round(confidence, 4),
+        })
 
-    paths.sort(key=lambda path: (-path["score"], path["hops"], path["nodes"][-1]))
-    return {"subgraph": subgraph, "paths": paths, "max_hops": max_hops, "confidence_threshold": confidence_threshold}
+    # Relevance first; among equally relevant paths prefer shorter, then more trustworthy ones.
+    paths.sort(key=lambda path: (-path["score"], path["hops"], -path["confidence"], path["nodes"][-1]))
+    return {
+        "subgraph": subgraph,
+        "paths": paths,
+        "max_hops": max_hops,
+        "confidence_threshold": confidence_threshold,
+        "as_of": as_of.isoformat() if as_of else None,
+    }
 
 
 # Advanced pipeline helper
@@ -91,8 +136,5 @@ def get_entity_subgraph(store: GraphStore, entity: str, hops: int = 2, query: st
     nodes = [{"id": n, **dict(g.nodes[n])} for n in g.nodes]
     edges = []
     for u, v, k, data in g.edges(keys=True, data=True):
-        e = {"source": u, "target": v, "key": k, **data}
-        if "relation" not in e and "type" in e:
-            e["relation"] = e["type"]
-        edges.append(e)
+        edges.append(edge_record(u, v, k, data))
     return {"nodes": nodes, "edges": edges}

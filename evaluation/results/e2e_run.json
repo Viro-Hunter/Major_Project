@@ -1,0 +1,566 @@
+{
+  "timings": {
+    "ingestion": [
+      2.69113
+    ],
+    "extraction+graph": [
+      1.08089
+    ],
+    "retrieval": [
+      0.19673,
+      0.24332,
+      0.24056,
+      0.20145,
+      0.23421,
+      0.2448,
+      0.18865,
+      0.23325,
+      0.24596,
+      0.19455,
+      0.23799,
+      0.27277,
+      0.21968,
+      0.27136,
+      0.2531,
+      0.26268,
+      0.20108,
+      0.24027,
+      0.24428,
+      0.26702
+    ],
+    "reasoning": [
+      0.00126,
+      0.00127,
+      0.00232,
+      0.0026,
+      0.00118,
+      0.00123,
+      0.0013,
+      0.00114,
+      0.00113,
+      0.00116,
+      0.00119,
+      0.00316,
+      0.00163,
+      0.00391,
+      0.00129,
+      0.00366,
+      0.00123,
+      0.00111,
+      0.00121,
+      0.00146
+    ],
+    "groundedness": [
+      0.00061,
+      0.00053,
+      0.00055,
+      0.00092,
+      0.00057,
+      0.00055,
+      0.00055,
+      0.00054,
+      0.00116,
+      0.00139,
+      0.00057,
+      0.00107,
+      0.00054,
+      0.00123,
+      0.00055,
+      0.00128,
+      0.00053,
+      0.00056,
+      0.00058,
+      0.00056
+    ],
+    "confidence": [
+      0.00092,
+      0.0011,
+      0.00096,
+      0.00221,
+      0.00101,
+      0.00106,
+      0.00104,
+      0.00095,
+      0.00095,
+      0.00096,
+      0.001,
+      0.00153,
+      0.00294,
+      0.00328,
+      0.0009,
+      0.00316,
+      0.00102,
+      0.0009,
+      0.00089,
+      0.00087
+    ]
+  },
+  "errors": [],
+  "config": {
+    "users": 20,
+    "rows_per_user": 60,
+    "seed": 42,
+    "llm": false,
+    "llm_extract": false,
+    "question": "Is this user exfiltrating data or behaving like an insider threat?",
+    "output": "/home/claude/Major_Project/evaluation/results/e2e_run.json"
+  },
+  "data_source": "demo",
+  "results": [
+    {
+      "user": "AJC0840",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 95,
+        "edges": 431,
+        "top_path_confidence": 0.9
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.046,
+      "verdict_label": "benign",
+      "confidence_pct": 58.0,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "AKK0329",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 110,
+        "edges": 439,
+        "top_path_confidence": 0.5093
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.034,
+      "verdict_label": "benign",
+      "confidence_pct": 42.4,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "AKW0167",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 96,
+        "edges": 430,
+        "top_path_confidence": 0.1741
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.01,
+      "verdict_label": "benign",
+      "confidence_pct": 14.5,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "BDV0168",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 167,
+        "edges": 743,
+        "top_path_confidence": 0.4272
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.593,
+      "verdict_label": "suspicious",
+      "confidence_pct": 75.0,
+      "techniques": [
+        "T1052",
+        "T1005",
+        "T1048",
+        "T1567"
+      ]
+    },
+    {
+      "user": "BEC0505",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 87,
+        "edges": 438,
+        "top_path_confidence": 0.1414
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.009,
+      "verdict_label": "benign",
+      "confidence_pct": 11.7,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "BLB0114",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 102,
+        "edges": 442,
+        "top_path_confidence": 0.2206
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.251,
+      "verdict_label": "benign",
+      "confidence_pct": 33.6,
+      "techniques": [
+        "T1030",
+        "T1071",
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "BTW0005",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 106,
+        "edges": 442,
+        "top_path_confidence": 0.176
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.198,
+      "verdict_label": "benign",
+      "confidence_pct": 19.6,
+      "techniques": [
+        "T1030",
+        "T1071",
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "CCM0467",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 87,
+        "edges": 429,
+        "top_path_confidence": 0.0114
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.046,
+      "verdict_label": "benign",
+      "confidence_pct": 57.9,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "DOL0332",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 97,
+        "edges": 429,
+        "top_path_confidence": 0.1129
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.133,
+      "verdict_label": "benign",
+      "confidence_pct": 34.4,
+      "techniques": [
+        "T1030",
+        "T1071",
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "DPS0262",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 89,
+        "edges": 426,
+        "top_path_confidence": 0.1249
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.186,
+      "verdict_label": "benign",
+      "confidence_pct": 39.0,
+      "techniques": [
+        "T1078",
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "DSB0731",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 84,
+        "edges": 435,
+        "top_path_confidence": 0.1477
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.01,
+      "verdict_label": "benign",
+      "confidence_pct": 12.3,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "EHD0584",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 129,
+        "edges": 545,
+        "top_path_confidence": 0.4041
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.636,
+      "verdict_label": "suspicious",
+      "confidence_pct": 75.0,
+      "techniques": [
+        "T1052",
+        "T1005",
+        "T1048",
+        "T1567"
+      ]
+    },
+    {
+      "user": "GJT0386",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 97,
+        "edges": 431,
+        "top_path_confidence": 0.1816
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.012,
+      "verdict_label": "benign",
+      "confidence_pct": 15.1,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "LDG0459",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 215,
+        "edges": 980,
+        "top_path_confidence": 0.0095
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.579,
+      "verdict_label": "suspicious",
+      "confidence_pct": 74.9,
+      "techniques": [
+        "T1052",
+        "T1005",
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "OCB0805",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 91,
+        "edges": 426,
+        "top_path_confidence": 0.1807
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.012,
+      "verdict_label": "benign",
+      "confidence_pct": 15.0,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "PNL0301",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 209,
+        "edges": 973,
+        "top_path_confidence": 0.0429
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.083,
+      "verdict_label": "benign",
+      "confidence_pct": 45.1,
+      "techniques": [
+        "T1567",
+        "T1005",
+        "T1052",
+        "T1048"
+      ]
+    },
+    {
+      "user": "RVC0232",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 91,
+        "edges": 434,
+        "top_path_confidence": 0.1065
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.013,
+      "verdict_label": "benign",
+      "confidence_pct": 15.9,
+      "techniques": [
+        "T1567",
+        "T1048"
+      ]
+    },
+    {
+      "user": "SSR0278",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 102,
+        "edges": 428,
+        "top_path_confidence": 0.19
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.0,
+      "verdict_label": "benign",
+      "confidence_pct": 15.3,
+      "techniques": [
+        "T1048"
+      ]
+    },
+    {
+      "user": "WJD0576",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 96,
+        "edges": 427,
+        "top_path_confidence": 0.0107
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.0,
+      "verdict_label": "benign",
+      "confidence_pct": 75.0,
+      "techniques": [
+        "T1048"
+      ]
+    },
+    {
+      "user": "WKD0013",
+      "retrieval": {
+        "route": "lookup",
+        "nodes": 91,
+        "edges": 427,
+        "top_path_confidence": 0.1304
+      },
+      "model": "template-fallback",
+      "groundedness": "grounded",
+      "risk_score": 0.092,
+      "verdict_label": "benign",
+      "confidence_pct": 18.2,
+      "techniques": [
+        "T1078",
+        "T1567",
+        "T1048"
+      ]
+    }
+  ],
+  "ingestion": {
+    "users": 20,
+    "rows": {
+      "logon": 1200,
+      "device": 166,
+      "file": 167,
+      "email": 1200,
+      "http": 1200
+    },
+    "normalized_events": 3933,
+    "rejected_rows": 0
+  },
+  "graph": {
+    "nodes": 1974,
+    "edges": 10155,
+    "node_types": {
+      "User": 20,
+      "Host": 22,
+      "AttackTechnique": 7,
+      "Device": 166,
+      "FileResource": 167,
+      "EmailEvent": 1200,
+      "NetworkConnection": 392
+    },
+    "edge_types": {
+      "OBSERVED_ON": 3933,
+      "SENT_EMAIL_TO": 1200,
+      "MATCHES_TECHNIQUE": 504,
+      "BROWSED": 1200,
+      "CONNECTED_DEVICE": 166,
+      "ACCESSED": 167,
+      "CONNECTED_TO": 166,
+      "INDICATES": 252,
+      "LOCATED_ON": 167,
+      "SENT_FROM": 1200,
+      "FROM_HOST": 1200
+    }
+  },
+  "timings_summary": {
+    "ingestion": {
+      "calls": 1,
+      "total_s": 2.6911,
+      "mean_s": 2.69113
+    },
+    "extraction+graph": {
+      "calls": 1,
+      "total_s": 1.0809,
+      "mean_s": 1.08089
+    },
+    "retrieval": {
+      "calls": 20,
+      "total_s": 4.6937,
+      "mean_s": 0.23469
+    },
+    "reasoning": {
+      "calls": 20,
+      "total_s": 0.0344,
+      "mean_s": 0.00172
+    },
+    "groundedness": {
+      "calls": 20,
+      "total_s": 0.0149,
+      "mean_s": 0.00074
+    },
+    "confidence": {
+      "calls": 20,
+      "total_s": 0.0276,
+      "mean_s": 0.00138
+    }
+  },
+  "summary": {
+    "users_processed": 20,
+    "verdict_labels": {
+      "benign": 17,
+      "suspicious": 3
+    },
+    "groundedness": {
+      "grounded": 20
+    },
+    "errors": 0
+  }
+}

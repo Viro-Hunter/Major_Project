@@ -8,6 +8,30 @@ from typing import Any, Dict
 import networkx as nx
 
 
+_ENDPOINT_KEYS = ("source", "target", "key")
+
+
+def edge_record(u: str, v: str, k: Any, data: Mapping[str, Any]) -> Dict[str, Any]:
+    """Edge as a flat dict whose ``source``/``target`` are ALWAYS the real endpoints.
+
+    Edge attributes named like an endpoint key (older CERT builds stored the log
+    name as ``source=...``) are preserved under ``log_source`` / ``attr_<name>``
+    instead of silently overwriting the endpoint.
+    """
+    rec: Dict[str, Any] = {}
+    for name, value in data.items():
+        if name == "source":
+            rec.setdefault("log_source", value)
+        elif name in _ENDPOINT_KEYS:
+            rec[f"attr_{name}"] = value
+        else:
+            rec[name] = value
+    rec.update({"source": u, "target": v, "key": k})
+    if "relation" not in rec and "type" in rec:
+        rec["relation"] = rec["type"]
+    return rec
+
+
 class GraphStore:
     """Small wrapper around :class:`networkx.MultiDiGraph`.
 
@@ -132,30 +156,36 @@ class GraphStore:
             self.graph.add_edge(src, dst, type=relation, relation=relation, confidence=base_confidence, **attrs)
 
     def get_subgraph_dict(self, entity: str, hops: int = 2) -> Dict[str, Any]:
-        """Advanced helper: return dict with nodes/edges for dashboard API."""
-        if not self.graph.has_node(entity):
+        """Advanced helper: return dict with nodes/edges for dashboard API.
+
+        Bounded BFS (both edge directions) from ``entity``; only the neighbourhood is
+        touched, so cost scales with the subgraph, not the whole graph.  Node and edge
+        Nodes are listed in BFS order (focus first); edges follow the graph's global
+        insertion order, which keeps the positional edge ids (``e<index>``) used by
+        the groundedness checker stable.
+        """
+        g = self.graph
+        if not g.has_node(entity):
             return {"nodes": [], "edges": []}
-        ug = self.graph.to_undirected()
-        try:
-            lengths = nx.single_source_shortest_path_length(ug, entity, cutoff=hops)
-        except Exception:
-            lengths = {entity: 0}
+        lengths: Dict[str, int] = {entity: 0}
+        frontier = [entity]
+        for depth in range(1, max(hops, 0) + 1):
+            nxt = []
+            for n in frontier:
+                for nb in list(g.successors(n)) + list(g.predecessors(n)):
+                    if nb not in lengths:
+                        lengths[nb] = depth
+                        nxt.append(nb)
+            frontier = nxt
+        # edges in global insertion order (stable positional ids); nodes in BFS order (focus first)
+        ordered = [n for n in g.nodes if n in lengths]
         nodes = []
-        for n, d in lengths.items():
-            data = dict(self.graph.nodes[n])
+        for n in lengths:
+            data = dict(g.nodes[n])
             data["id"] = n
-            data["distance"] = d
+            data["distance"] = lengths[n]
             nodes.append(data)
-        node_set = set(lengths.keys())
-        edges = []
-        for u, v, k, data in self.graph.edges(keys=True, data=True):
-            if u in node_set and v in node_set:
-                # normalize keys
-                e = {"source": u, "target": v, "key": k, **data}
-                # ensure relation field exists
-                if "relation" not in e and "type" in e:
-                    e["relation"] = e["type"]
-                edges.append(e)
+        edges = [edge_record(u, v, k, data) for u, v, k, data in g.edges(ordered, keys=True, data=True) if v in lengths]
         return {"nodes": nodes, "edges": edges}
 
     # Make advanced routes work with same method name: delegate to dict version if needed

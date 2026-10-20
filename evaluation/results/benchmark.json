@@ -1,0 +1,267 @@
+{
+  "generated_at": "2026-10-20T16:16:58+00:00",
+  "config": {
+    "mode": "auto",
+    "users": 60,
+    "insiders": 12,
+    "rows_per_user": 60,
+    "seed": 42,
+    "llm": false,
+    "hallucination_rate": 0.3,
+    "retry_failure_rate": 0.5
+  },
+  "label_mode": "injected",
+  "data_source": "demo",
+  "notes": [
+    "INJECTED scenarios (no answer key found in data/raw/answers): 12 insiders (S1=4, S2=4, S3=4) among 60 real demo users; benign users are unlabelled real CERT users"
+  ],
+  "models": {
+    "template-fallback": 60
+  },
+  "detection_threshold": 0.4,
+  "dataset": {
+    "users": 60,
+    "insiders": 12,
+    "benign": 48,
+    "rows": {
+      "logon": 3624,
+      "device": 1004,
+      "file": 1021,
+      "email": 3604,
+      "http": 3648
+    },
+    "malicious_rows": 168,
+    "graph_nodes": 6608,
+    "graph_edges": 36317
+  },
+  "headline": {
+    "retrieval_accuracy_f1": 0.319,
+    "graph_completeness": 1.0,
+    "threat_correlation_precision": 0.44,
+    "mean_query_latency_s": 0.0156,
+    "indexing_time_s": 3.411,
+    "detection_f1": 0.609,
+    "detection_precision": 0.636,
+    "detection_recall": 0.583,
+    "false_positive_rate": 0.083
+  },
+  "retrieval_accuracy": {
+    "precision": 0.736,
+    "recall": 0.24,
+    "f1": 0.319
+  },
+  "graph_completeness": {
+    "ratio": 1.0,
+    "found": 6601,
+    "expected": 6601,
+    "missing_sample": []
+  },
+  "threat_correlation": {
+    "precision": 0.44,
+    "recall": 0.5,
+    "f1": 0.468,
+    "tp": 22,
+    "fp": 28,
+    "fn": 22
+  },
+  "technique_coverage": {
+    "T1005": {
+      "expected": 8,
+      "found": 4
+    },
+    "T1048": {
+      "expected": 4,
+      "found": 0
+    },
+    "T1052": {
+      "expected": 12,
+      "found": 7
+    },
+    "T1056": {
+      "expected": 4,
+      "found": 0
+    },
+    "T1078": {
+      "expected": 8,
+      "found": 6
+    },
+    "T1567": {
+      "expected": 8,
+      "found": 5
+    }
+  },
+  "response_time": {
+    "indexing": {
+      "count": 1.0,
+      "total_s": 3.41073,
+      "mean_s": 3.41073,
+      "p50_s": 3.41073,
+      "p95_s": 3.41073,
+      "max_s": 3.41073
+    },
+    "retrieval": {
+      "count": 60.0,
+      "total_s": 0.61333,
+      "mean_s": 0.01022,
+      "p50_s": 0.00774,
+      "p95_s": 0.0175,
+      "max_s": 0.05554
+    },
+    "reasoning": {
+      "count": 60.0,
+      "total_s": 0.12864,
+      "mean_s": 0.00214,
+      "p50_s": 0.00138,
+      "p95_s": 0.00481,
+      "max_s": 0.00681
+    },
+    "groundedness": {
+      "count": 60.0,
+      "total_s": 0.0718,
+      "mean_s": 0.0012,
+      "p50_s": 0.00064,
+      "p95_s": 0.00134,
+      "max_s": 0.02099
+    },
+    "query_total": {
+      "count": 60.0,
+      "total_s": 0.9367,
+      "mean_s": 0.01561,
+      "p50_s": 0.01101,
+      "p95_s": 0.03602,
+      "max_s": 0.06395
+    }
+  },
+  "detection": {
+    "precision": 0.636,
+    "recall": 0.583,
+    "f1": 0.609,
+    "tp": 7,
+    "fp": 4,
+    "fn": 5,
+    "tn": 44,
+    "fpr": 0.083,
+    "accuracy": 0.85,
+    "support": 60
+  },
+  "detection_ablation_no_peer_baseline": {
+    "precision": 0.3,
+    "recall": 1.0,
+    "f1": 0.462,
+    "tp": 12,
+    "fp": 28,
+    "fn": 0,
+    "tn": 20,
+    "fpr": 0.583,
+    "accuracy": 0.533,
+    "support": 60
+  },
+  "detection_naive_any_technique": {
+    "precision": 0.2,
+    "recall": 1.0,
+    "f1": 0.333,
+    "tp": 12,
+    "fp": 48,
+    "fn": 0,
+    "tn": 0,
+    "fpr": 1.0,
+    "accuracy": 0.2,
+    "support": 60
+  },
+  "threshold_sweep": [
+    {
+      "threshold": 0.2,
+      "precision": 0.444,
+      "recall": 1.0,
+      "f1": 0.615,
+      "fpr": 0.312,
+      "tp": 12,
+      "fp": 15
+    },
+    {
+      "threshold": 0.3,
+      "precision": 0.579,
+      "recall": 0.917,
+      "f1": 0.71,
+      "fpr": 0.167,
+      "tp": 11,
+      "fp": 8
+    },
+    {
+      "threshold": 0.4,
+      "precision": 0.636,
+      "recall": 0.583,
+      "f1": 0.609,
+      "fpr": 0.083,
+      "tp": 7,
+      "fp": 4
+    },
+    {
+      "threshold": 0.5,
+      "precision": 1.0,
+      "recall": 0.25,
+      "f1": 0.4,
+      "fpr": 0.0,
+      "tp": 3,
+      "fp": 0
+    },
+    {
+      "threshold": 0.6,
+      "precision": 1.0,
+      "recall": 0.083,
+      "f1": 0.154,
+      "fpr": 0.0,
+      "tp": 1,
+      "fp": 0
+    },
+    {
+      "threshold": 0.7,
+      "precision": 1.0,
+      "recall": 0.083,
+      "f1": 0.154,
+      "fpr": 0.0,
+      "tp": 1,
+      "fp": 0
+    }
+  ],
+  "by_scenario": {
+    "S1": {
+      "insiders": 4,
+      "detected": 3,
+      "mean_risk": 0.43,
+      "description": "after-hours logins + removable media + upload to WikiLeaks"
+    },
+    "S2": {
+      "insiders": 4,
+      "detected": 1,
+      "mean_risk": 0.355,
+      "description": "job-site browsing, then data theft over a thumb drive"
+    },
+    "S3": {
+      "insiders": 4,
+      "detected": 3,
+      "mean_risk": 0.556,
+      "description": "disgruntled admin: keylogger, supervisor-PC login after hours, mass external email"
+    }
+  },
+  "benign_risk": {
+    "mean": 0.132,
+    "max": 0.436
+  },
+  "groundedness_live": {
+    "grounded": 60
+  },
+  "groundedness_fault_injection": {
+    "clean_verdicts": 60,
+    "clean_false_alarms": 0,
+    "injected": 15,
+    "caught": 15,
+    "recovered_by_retry": 10,
+    "flagged_unverified": 5,
+    "retries": 25,
+    "hallucination_rate": 0.3,
+    "retry_failure_rate": 0.5,
+    "catch_rate": 1.0,
+    "false_alarm_rate": 0.0
+  }
+}

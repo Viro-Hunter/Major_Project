@@ -5,9 +5,63 @@ from typing import Dict
 from .groundedness_checker import indexed_edge_ids
 from .risk_model import score_risk
 
+# Callers may attach analysis context to the subgraph dict under this key:
+#   {"focus": <entity id>, "prevalence": {technique_node: fraction_of_users}}
+# It is never sent to the LLM and does not change the subgraph's edges/ids.
+CONTEXT_KEY = "_context"
+
+
+def _context(subgraph: Dict) -> Dict:
+    ctx = subgraph.get(CONTEXT_KEY) if isinstance(subgraph, dict) else None
+    return ctx if isinstance(ctx, dict) else {}
+
+
+def _behavioral_template(subgraph: Dict, query: str, focus: str, prevalence) -> Dict | None:
+    """Template verdict driven by ATT&CK evidence paths (Week 9). None if there is no technique evidence."""
+    from .evidence import behavioral_risk
+
+    analysis = behavioral_risk(subgraph, focus, prevalence)
+    if not analysis["techniques"]:
+        return None
+    risk = analysis["risk"]
+    level = "HIGH" if risk >= 0.7 else "MEDIUM" if risk >= 0.4 else "LOW"
+    parts = []
+    cited: list[str] = []
+    for c in analysis["techniques"][:5]:
+        parts.append(
+            f"{c['technique_id']} via {c['pattern'] or 'technique match'} "
+            f"({c['support']} supporting event{'s' if c['support'] != 1 else ''}, "
+            f"path confidence {c['path_confidence']:.2f}, seen in {c['peer_prevalence']:.0%} of peers)"
+        )
+        for eid in c.get("supporting_edge_ids") or c["edge_ids"]:
+            if eid not in cited:
+                cited.append(eid)
+    narrative = (
+        f"{focus}: {len(analysis['techniques'])} distinct ATT&CK technique(s) linked by evidence paths — "
+        + "; ".join(parts)
+        + f". Combined behavioural risk {risk:.2f} ({level}). "
+        + ("Multiple distinct stages co-occur — recommend analyst review." if len(analysis["techniques"]) >= 2 and risk >= 0.4
+           else "Behaviour is common among peers or weakly supported." if risk < 0.4 else "Review recommended.")
+    )
+    return {
+        "narrative": narrative,
+        "risk_score": round(risk, 3),
+        "confidence": round(analysis["propagated_confidence"], 3),
+        "evidence_edges": len(cited),
+        "cited_edges": cited,
+        "grounded": True,
+        "model": "template-fallback",
+        "techniques": analysis["techniques"],
+    }
+
 
 def _template_verdict(subgraph: Dict, query: str) -> Dict:
-    """Fallback when Ollama is offline — deterministic, grounded."""
+    """Fallback when the LLM is offline — deterministic, grounded."""
+    ctx = _context(subgraph)
+    if ctx.get("focus"):
+        behavioural = _behavioral_template(subgraph, query, ctx["focus"], ctx.get("prevalence"))
+        if behavioural is not None:
+            return behavioural
     nodes = subgraph.get("nodes", [])
     edges = subgraph.get("edges", [])
     risk = score_risk(subgraph, groundedness=1.0)
@@ -37,7 +91,13 @@ def _template_verdict(subgraph: Dict, query: str) -> Dict:
 
 
 def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = None) -> Dict | None:
-    """Try Ollama via llm/client.py — returns None if offline."""
+    """Try Ollama via llm/client.py — returns None if offline.
+
+    Set ``CYBERGRAPHRAG_OFFLINE=1`` to skip the LLM entirely (CI, benchmarks
+    without a model) instead of paying the client's connection-retry backoff.
+    """
+    if os.getenv("CYBERGRAPHRAG_OFFLINE", "").strip().lower() in ("1", "true", "yes"):
+        return None
     try:
         from llm.client import LLMClient
 
@@ -54,15 +114,35 @@ def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = 
         # Every edge gets a stable id (its own, or positional e<index>) so the model can cite it
         # and reasoning.groundedness_checker can verify it.
         all_ids = indexed_edge_ids(subgraph)
-        # Keep subgraph compact for local 8B context
+        edges = subgraph.get("edges", [])
+        # Keep subgraph compact for a local small-model context window, but put the
+        # ATT&CK evidence-path edges FIRST so they are never truncated away.
+        ctx = _context(subgraph)
+        priority: list[int] = []
+        evidence_summary = ""
+        if ctx.get("focus"):
+            from .evidence import behavioral_risk
+
+            analysis = behavioral_risk(subgraph, ctx["focus"], ctx.get("prevalence"))
+            pos = {eid: i for i, eid in enumerate(all_ids)}
+            for c in analysis["techniques"]:
+                priority.extend(pos[e] for e in c["edge_ids"] if e in pos and pos[e] not in priority)
+            if analysis["techniques"]:
+                evidence_summary = "Evidence paths (technique, pattern, path confidence, peer prevalence, edge ids): " + json.dumps(
+                    [[c["technique_id"], c["pattern"], c["path_confidence"], c["peer_prevalence"], c["edge_ids"]] for c in analysis["techniques"][:8]]
+                ) + "\n"
+        order = priority + [i for i in range(len(edges)) if i not in set(priority)]
+        keep = order[:40]
+        node_ids = {edges[i].get("source") for i in keep} | {edges[i].get("target") for i in keep}
+        nodes = [n for n in subgraph.get("nodes", []) if n.get("id") in node_ids][:40]
         compact = {
-            "nodes": [{k: v for k, v in n.items() if k in ("id", "type", "attributes", "name")} for n in subgraph.get("nodes", [])[:30]],
+            "nodes": [{k: v for k, v in n.items() if k in ("id", "type", "name")} for n in nodes],
             "edges": [
-                {"id": all_ids[i], **{k: v for k, v in e.items() if k in ("source", "target", "type", "relation", "confidence")}}
-                for i, e in enumerate(subgraph.get("edges", [])[:40])
+                {"id": all_ids[i], **{k: v for k, v in edges[i].items() if k in ("source", "target", "type", "relation", "confidence", "timestamp", "pattern")}}
+                for i in keep
             ],
         }
-        user_prompt = f"Subgraph: {json.dumps(compact)}\nQuestion: {query}\nRespond JSON only."
+        user_prompt = f"Subgraph: {json.dumps(compact, default=str)}\n{evidence_summary}Question: {query}\nRespond JSON only."
         if extra_instruction:
             user_prompt += "\n\n" + extra_instruction
         resp = client.call(system_prompt, user_prompt)
