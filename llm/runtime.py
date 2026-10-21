@@ -18,6 +18,7 @@ class ActiveLLM:
     model: str
     tier: str = "unknown"          # "paid" | "free" | "unknown"
     allowed_models: tuple[str, ...] = ()
+    json_models: tuple[str, ...] = ()      # models that accept response_format=json_object
 
 
 _lock = threading.Lock()

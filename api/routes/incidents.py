@@ -112,6 +112,68 @@ async def query_incident(payload: IncidentQuery) -> dict[str, Any]:
     return {"route": route, "entity_id": payload.entity_id, "question": payload.question, **_serialize_result(result), "verdict": verdict}
 
 
+class AskBody(BaseModel):
+    entity: str
+    question: str
+
+
+@router.post("/incidents/ask")
+def ask_about_entity(body: AskBody):
+    """Answer a question about one person from their log records. Never changes the case verdict.
+
+    Order: scope guard (refuse protected/personal questions, logged) -> LLM answer citing record ids,
+    checked against the records -> question-aware answer built from the logs if no model is usable.
+    """
+    import os
+
+    from action.audit_log import log_action
+    from llm.runtime import get_active
+    from reasoning.qa import llm_answer, offline_answer
+    from reasoning.scope_guard import check_scope, refusal
+    from reasoning.verdict_generator import describe_llm_error
+
+    question = (body.question or "").strip()[:500]
+    base = {"entity": body.entity, "question": question}
+    decision = check_scope(question)
+    if not decision.in_scope:
+        log_action("question_refused", {"entity": body.entity, "question": question, "category": decision.category},
+                   executed_by="analyst", status="refused")
+        return {**base, "refused": True, "category": decision.category, "answer": decision.message, "model": "scope-guard"}
+    if not store.graph.has_node(body.entity):
+        raise HTTPException(status_code=404, detail=f"unknown entity {body.entity}")
+    sg = get_entity_subgraph(store, body.entity, hops=1, query=question)
+
+    reason = None
+    offline = get_active() is None and os.getenv("CYBERGRAPHRAG_OFFLINE", "").strip().lower() in ("1", "true", "yes")
+    if not offline:
+        model = None
+        try:
+            from llm.client import LLMClient
+
+            client = LLMClient()
+            model = client.model
+            res = llm_answer(sg, body.entity, question, client)
+            if res.get("out_of_scope"):
+                msg = refusal("personal life or anything the logs cannot show")
+                log_action("question_refused", {"entity": body.entity, "question": question, "category": "model judged out of scope"},
+                           executed_by="analyst", status="refused")
+                return {**base, "refused": True, "category": "out of scope (judged by the AI)", "answer": msg, "model": model}
+            if res.get("answer"):
+                return {**base, "refused": False, "answer": res["answer"], "cited_edges": res["cited_edges"],
+                        "evidence": res["evidence"], "missing_edges": res.get("missing_edges", []),
+                        "status": "unverified" if res.get("missing_edges") else "grounded", "model": model}
+            reason = f"{model} returned an empty answer"
+        except ValueError as exc:
+            reason = str(exc)
+        except Exception as exc:  # network / rate limit / timeout
+            reason = describe_llm_error(exc, model)
+    fb = offline_answer(sg, body.entity, question)
+    return {**base, "refused": False, "answer": fb["answer"], "cited_edges": fb["cited_edges"], "evidence": fb["evidence"],
+            "more": fb.get("more", 0), "status": "grounded" if fb["cited_edges"] else "n/a",
+            "model": "rules-engine", "fallback_reason": reason or ("offline mode" if offline else None),
+            "supported": fb["mode"] != "offline-unsupported"}
+
+
 @router.get("/incidents/{entity}/stix")
 def incident_stix(entity: str, query: str = Query("Is this user exfiltrating data or behaving like an insider threat?")):
     """The checked verdict for ``entity`` as a STIX 2.1 bundle (MITRE ATT&CK objects embedded natively)."""

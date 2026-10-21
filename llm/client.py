@@ -79,6 +79,7 @@ class LLMClient:
             self.model = model or self._default_model()
             self.source = "env"
         self.base_url = base_url or self._base_url_for(self.provider)
+        self.json_mode = bool(active is not None and self.model in getattr(active, "json_models", ()))
         self._session = None
 
     # ------------------------------------------------------------------ #
@@ -159,7 +160,7 @@ class LLMClient:
     def _call_openai(self, system_prompt: str, user_prompt: str) -> LLMResponse:
         import openai
 
-        kwargs: dict = {"api_key": self.api_key or "none", "timeout": 90.0, "max_retries": 1}
+        kwargs: dict = {"api_key": self.api_key or "none", "timeout": 180.0, "max_retries": 1}
         if self.base_url:
             kwargs["base_url"] = self.base_url
         if self.provider == "openrouter":
@@ -167,14 +168,24 @@ class LLMClient:
 
             kwargs["default_headers"] = APP_HEADERS
         client = openai.OpenAI(**kwargs)
-        completion = client.chat.completions.create(
+        request = dict(
             model=self.model,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
-            max_tokens=2048,
+            # reasoning models spend part of the budget "thinking" before the answer
+            max_tokens=6000,
         )
+        if self.json_mode and "json" in (system_prompt + user_prompt).lower():
+            request["response_format"] = {"type": "json_object"}
+        try:
+            completion = client.chat.completions.create(**request)
+        except openai.BadRequestError:
+            if "response_format" not in request:
+                raise
+            request.pop("response_format")  # model claims support but rejects it: plain request
+            completion = client.chat.completions.create(**request)
         choices = completion.choices or []
         content = choices[0].message.content if choices else ""
         return LLMResponse(content=content or "", model=self.model, raw=completion)

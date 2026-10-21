@@ -130,10 +130,12 @@ class ModelInfo:
     est_cost_per_verdict: Optional[float] = None
     score: float = 0.0
     tags: list[str] = field(default_factory=list)
+    json_mode: bool = False      # accepts response_format / structured outputs
+    reasoning: bool = False      # a "thinking" model: slower, often wraps its JSON in reasoning
 
     def as_dict(self) -> dict[str, Any]:
         return {k: getattr(self, k) for k in ("id", "name", "free", "context_length", "prompt_price",
-                                              "completion_price", "est_cost_per_verdict", "score", "tags")}
+                                              "completion_price", "est_cost_per_verdict", "score", "tags", "json_mode", "reasoning")}
 
 
 def _price(v: Any) -> Optional[float]:
@@ -172,6 +174,11 @@ def score_free_model(m: ModelInfo) -> float:
     s += min(20.0, 6.0 * math.log10(1 + _params_billions(mid)))       # 70B -> ~11, 400B -> ~16
     s += min(10.0, 2.5 * math.log2(1 + (m.context_length or 8192) / 8192))
     s -= sum(p for pat, p in FREE_PENALTY if re.search(pat, mid))
+    # Capability data from OpenRouter beats name heuristics when present.
+    if m.json_mode:
+        s += 8
+    if m.reasoning:
+        s -= 14
     return round(s, 2)
 
 
@@ -202,9 +209,12 @@ def _openrouter_models(key: str) -> list[ModelInfo]:
         if p is None or c is None or p < 0 or c < 0:   # -1 = variable-price router models
             continue
         free = p == 0 and c == 0
+        params = set(d.get("supported_parameters") or [])
         m = ModelInfo(id=d["id"], name=d.get("name") or d["id"], free=free, context_length=d.get("context_length"),
                       prompt_price=p, completion_price=c,
-                      est_cost_per_verdict=round(EST_PROMPT_TOKENS * p + EST_COMPLETION_TOKENS * c, 6))
+                      est_cost_per_verdict=round(EST_PROMPT_TOKENS * p + EST_COMPLETION_TOKENS * c, 6),
+                      json_mode=bool(params & {"response_format", "structured_outputs"}),
+                      reasoning=bool(params & {"reasoning", "include_reasoning"}))
         m.score = score_free_model(m) if free else 0.0
         out.append(m)
     return out

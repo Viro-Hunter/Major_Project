@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import EvidenceGraph from './EvidenceGraph';
 import GroundednessBadge from './GroundednessBadge';
 import Timeline from './Timeline';
@@ -57,7 +57,10 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
-  const [question, setQuestion] = useState(SUGGESTED[0]);
+  const [question, setQuestion] = useState('');
+  const [thread, setThread] = useState([]);
+  const [asking, setAsking] = useState(false);
+  const threadEnd = useRef(null);
   const [hops, setHops] = useState(1);
 
   useEffect(() => {
@@ -68,7 +71,25 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
       .then(setSubgraph).catch((e) => setError(`Could not load this person's activity (${e.message}).`));
   }, [apiBaseUrl, entity, hops]);
 
-  const investigate = async (q = question) => {
+  // Questions are a conversation about the evidence: answers appear under the box and never
+  // replace the case verdict above.
+  const ask = async (q) => {
+    const text = (q ?? question).trim();
+    if (!text || asking) return;
+    setAsking(true); setQuestion('');
+    setThread((t) => [...t, { q: text, pending: true }]);
+    let a;
+    try {
+      const r = await fetch(`${apiBaseUrl}/incidents/ask`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                                                             body: JSON.stringify({ entity, question: text }) });
+      a = r.ok ? await r.json() : { error: `The question could not be answered (HTTP ${r.status}).` };
+    } catch (e) { a = { error: `The question could not be answered (${e.message}).` }; }
+    setThread((t) => t.map((x, k) => (k === t.length - 1 ? { q: text, a } : x)));
+    setAsking(false);
+  };
+  useEffect(() => { threadEnd.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }, [thread]);
+
+  const investigate = async (q = SUGGESTED[0]) => {
     setBusy(true); setError(null);
     try {
       const r = await fetch(`${apiBaseUrl}/incidents/analyze`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -143,7 +164,10 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
             ? <p className="ui-warn">⚠ Some of the AI's claims could not be found in the logs. The answer is marked unverified and its risk was lowered. Treat it with caution.</p>
             : <p className="ui-ok">✓ Every claim was checked against the original logs ({v.groundedness?.verified_edges?.length || 0} pieces of evidence){status === 'regenerated' ? '. The AI had to correct itself first.' : '.'}</p>}
           <p className="ui-muted" style={{ margin: '4px 0 0' }}>
-            {v.model === 'template-fallback' ? 'Written by the built-in rules engine (no AI model connected). Connect one under “AI model” below.' : `Written by ${v.model}.`}
+            {v.model !== 'template-fallback' ? `Written by ${v.model}.`
+              : v.fallback_reason && v.fallback_reason !== 'offline'
+                ? <>Written by the built-in rules engine because the AI model's answer could not be used: <b>{v.fallback_reason}</b>.</>
+                : 'Written by the built-in rules engine (no AI model connected). Connect one under “AI model” below.'}
           </p>
           <details style={{ marginTop: 8 }} open={technical}>
             <summary className="ui-muted" style={{ cursor: 'pointer' }}>Show the full AI answer</summary>
@@ -196,12 +220,23 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
       {/* Ask */}
       <section className="ui-card" aria-label="Ask a question">
         <h3 className="ui-h3">Ask a question about {entity}</h3>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0' }}>
-          {SUGGESTED.map((s) => <button key={s} className="ui-chip" onClick={() => { setQuestion(s); investigate(s); }} disabled={busy}>{s}</button>)}
+        <p className="ui-muted" style={{ margin: '2px 0 8px' }}>Answers come only from {entity}'s work activity in the logs. Questions about personal characteristics are declined.</p>
+        <div aria-live="polite" style={{ display: 'grid', gap: 10, marginBottom: thread.length ? 12 : 0 }}>
+          {thread.map((m, k) => (
+            <div key={k} style={{ display: 'grid', gap: 6 }}>
+              <div style={{ justifySelf: 'end', background: '#eef2ff', color: '#1e1b4b', padding: '8px 12px', borderRadius: '12px 12px 2px 12px', maxWidth: '85%', overflowWrap: 'anywhere' }}>{m.q}</div>
+              {m.pending ? <div className="ui-muted" style={{ padding: '4px 2px' }}>Looking through the logs…</div> : <Answer a={m.a} technical={technical} />}
+            </div>
+          ))}
+          <div ref={threadEnd} />
         </div>
-        <form onSubmit={(e) => { e.preventDefault(); investigate(); }} style={{ display: 'flex', gap: 8 }}>
-          <input className="ui-input" value={question} onChange={(e) => setQuestion(e.target.value)} aria-label="Your question" style={{ flex: 1, minWidth: 0 }} />
-          <button className="ui-btn primary" disabled={busy || !question.trim()}>Ask</button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 8px' }}>
+          {SUGGESTED.map((sg) => <button key={sg} className="ui-chip" onClick={() => ask(sg)} disabled={asking}>{sg}</button>)}
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); ask(); }} style={{ display: 'flex', gap: 8 }}>
+          <input className="ui-input" value={question} onChange={(e) => setQuestion(e.target.value)} aria-label="Your question"
+                 placeholder={`e.g. Did ${entity} use a USB drive at night?`} maxLength={500} style={{ flex: 1, minWidth: 0 }} />
+          <button className="ui-btn primary" disabled={asking || !question.trim()}>{asking ? 'Asking…' : 'Ask'}</button>
         </form>
       </section>
 
@@ -220,6 +255,32 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
           <div style={{ marginTop: 12 }}><Timeline entityId={entity} apiBaseUrl={apiBaseUrl} /></div>
         </section>
       )}
+    </div>
+  );
+}
+
+function Answer({ a, technical }) {
+  if (a.error) return <p className="ui-error" style={{ margin: 0 }}>{a.error}</p>;
+  const box = { background: a.refused ? '#f8fafc' : '#ffffff', border: `1px solid ${a.refused ? '#cbd5e1' : '#e2e8f0'}`,
+                borderRadius: '12px 12px 12px 2px', padding: '10px 12px', maxWidth: '92%', overflowWrap: 'anywhere' };
+  return (
+    <div style={box}>
+      {a.refused && <div className="ui-label" style={{ color: '#475569' }}>🛡 Not something this tool will answer</div>}
+      <div style={{ lineHeight: 1.5 }}>{a.answer}</div>
+      {a.evidence?.length > 0 && (
+        <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
+          {a.evidence.map((e, i) => <li key={i}>{e}</li>)}
+          {a.more > 0 && <li className="ui-muted">and {a.more} more</li>}
+        </ul>
+      )}
+      <div className="ui-muted" style={{ fontSize: 12, marginTop: 6, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+        {!a.refused && a.status === 'grounded' && a.cited_edges?.length > 0 && <span className="ui-ok" style={{ margin: 0 }}>✓ Checked against {a.cited_edges.length} log record{a.cited_edges.length > 1 ? 's' : ''}</span>}
+        {a.status === 'unverified' && <span style={{ color: '#b91c1c', fontWeight: 600 }}>⚠ Some cited records do not exist; treat with caution</span>}
+        {a.model === 'rules-engine' && <span>Answered from the logs directly{a.fallback_reason && a.fallback_reason !== 'offline mode' ? ` (AI model not used: ${a.fallback_reason})` : ''}</span>}
+        {a.model && !['rules-engine', 'scope-guard'].includes(a.model) && <span>Answered by {a.model}</span>}
+        {a.refused && a.model === 'scope-guard' && <span>Declined before reaching the AI · recorded in the audit log</span>}
+        {technical && a.cited_edges?.length > 0 && <span className="ui-code">{a.cited_edges.join(', ')}</span>}
+      </div>
     </div>
   );
 }

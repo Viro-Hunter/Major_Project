@@ -50,7 +50,8 @@ def connect(body: KeyBody):
     if result.get("valid") and result.get("recommended"):
         runtime.set_active(runtime.ActiveLLM(
             provider=result["provider"], api_key=body.api_key.strip(), model=result["recommended"],
-            tier=result.get("tier", "unknown"), allowed_models=tuple(m["id"] for m in result["models"])))
+            tier=result.get("tier", "unknown"), allowed_models=tuple(m["id"] for m in result["models"]),
+            json_models=tuple(m["id"] for m in result["models"] if m.get("json_mode"))))
         result["active_model"] = result["recommended"]
     return result
 

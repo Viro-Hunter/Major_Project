@@ -94,6 +94,14 @@ Interactive API docs: http://localhost:8000/docs.
 
 ---
 
+## Asking questions — and what the tool refuses
+
+The **Ask a question** box answers questions about one person's *work activity* (logins, USB devices, files, email, websites, why they were flagged) as a conversation under the box; it never changes the case verdict. Every answer lists the log records it relies on and is checked against them.
+
+- **With an AI model connected**, the model answers in plain English and must cite record ids. Invented ids are caught, the model gets one constrained retry, and the answer is then marked "treat with caution".
+- **Without a model, or if its reply can't be used**, common question types are answered straight from the logs, and the UI says *why* the model wasn't used (rate limit, timeout, wrong format, no evidence cited).
+- **Questions about protected or personal characteristics are declined** before any model is called, and the attempt is written to the audit log (`reasoning/scope_guard.py`). This covers sexual orientation, religion, caste or ethnicity, health, politics, relationships and appearance. Logs can't answer such questions, and profiling employees on them is unfair and unlawful. The AI's instructions carry the same rule as a second layer.
+
 ## Story mode (presentations)
 
 Twelve presenter-paced scenes (→ / Space / ←) follow one employee from ordinary weeks to two late nights of data theft. Each step is shown in plain language: connecting the dots, comparing with colleagues, the AI's answer, the fact-check rejecting an invented claim, confidence, the STIX export, and measured results.
@@ -119,7 +127,7 @@ Only verified evidence is exported. Bundles pass the OASIS `stix2-validator` in 
 ## Testing and evaluation
 
 ```bash
-pytest -q                                   # 130 tests; no API key or model needed
+pytest -q                                   # 152 tests; no API key or model needed
 python scripts/run_pipeline_e2e.py          # all 7 stages on 20 users, per-stage timing; exit 1 on any error
 python evaluation/run_benchmark.py          # five metrics -> evaluation/results/benchmark_report.md
 python scripts/generate_report_assets.py    # figures -> docs/report_assets/, captioned tables -> docs/report_tables.md
@@ -180,7 +188,7 @@ llm/           provider detection, key check, client   action/       action gate
 api/           FastAPI routes                          dashboard/    React dashboard + Story mode
 evaluation/    metrics, benchmark, scenarios, model comparison       scripts/  graph build, e2e, demo, report assets
 data/          demo CERT subset, ATT&CK lookup, MITRE STIX objects   docs/     architecture, design notes, report assets
-tests/         130 tests
+tests/         152 tests
 ```
 
 ## Changelog by week
@@ -207,6 +215,7 @@ What each week of the Semester 7 plan delivered. Commit dates are the real dates
 - **Native STIX 2.1 export:** uses MITRE's official ATT&CK objects and is validated with the OASIS validator (`intel/stix_export.py`).
 - **Hybrid LLM extraction:** extraction-time grounding (`extraction/llm_enrichment.py`) and a template-vs-LLM comparison (`evaluation/compare_models.py`).
 - **Story mode:** a 12-scene presentation for non-technical audiences, also available as one offline file (`docs/story.html`).
+- **Question answering with a scope guard:** answers appear under the box and are checked against log records; protected-characteristic questions are refused and audited; the AI's reply parsing now tolerates reasoning models, and every fallback states its reason (`reasoning/qa.py`, `reasoning/scope_guard.py`).
 - **Dashboard redesign:** plain language by default with a Technical details switch. People-to-review list, case file, verified-evidence table with colleague comparison, a stable evidence-first graph, an activity chart, outcome-based metrics, and no sideways overflow on laptop, projector or phone.
 
 ## Documentation

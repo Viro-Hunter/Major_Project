@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.0-sem7] - 2026-10-21
+
+### Added
+- `POST /incidents/ask`: questions about one person answered from their log records, shown as a thread under the question box; the case verdict is never changed by a question.
+- Scope guard (`reasoning/scope_guard.py`): questions about sexual orientation, religion, caste/ethnicity, health, politics, relationships or appearance are refused before any model call and written to the audit log; the same rule is in the AI's instructions.
+- Question-aware offline answers (night vs weekend activity, USB plug-ins vs removals, files, email, websites, why flagged, recent activity).
+
+### Fixed
+- A connected model's answers were silently discarded unless they were perfectly clean JSON (a preamble, `<think>` block or trailing sentence caused a fallback), and the UI then claimed no model was connected. Replies are now parsed tolerantly, every fallback records and shows its reason (rate limit, timeout, empty reply, wrong format, no evidence cited), the token budget and timeout suit reasoning models, and OpenRouter JSON mode is used when the model supports it.
+- Free-model recommendation now prefers JSON-capable models and ranks slow reasoning models lower, using OpenRouter's capability data.
+- Asking a question re-ran the investigation and replaced the verdict at the top of the page.
+
 ## [1.2.0-sem7] - 2026-10-21
 
 ### Changed

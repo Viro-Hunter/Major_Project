@@ -1,9 +1,13 @@
 import json
+import logging
+import re
 import os
 from typing import Dict
 
 from .groundedness_checker import indexed_edge_ids
 from .risk_model import score_risk
+
+log = logging.getLogger(__name__)
 
 # Callers may attach analysis context to the subgraph dict under this key:
 #   {"focus": <entity id>, "prevalence": {technique_node: fraction_of_users}}
@@ -90,7 +94,39 @@ def _template_verdict(subgraph: Dict, query: str) -> Dict:
     }
 
 
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
+def extract_json_object(text: str) -> dict | None:
+    """First JSON object in an LLM reply, tolerating what real models wrap around it:
+    <think>...</think> reasoning blocks, markdown fences, a preamble ("Here is the analysis:")
+    and trailing commentary. Prefers an object that contains a "narrative" key."""
+    if not text:
+        return None
+    text = _THINK_RE.sub("", text)
+    text = re.sub(r"```(?:json)?", "", text)
+    decoder = json.JSONDecoder()
+    found = []
+    for i, ch in enumerate(text):
+        if ch != "{":
+            continue
+        try:
+            obj, _ = decoder.raw_decode(text[i:])
+        except ValueError:
+            continue
+        if isinstance(obj, dict):
+            if "narrative" in obj or "explanation" in obj or "answer" in obj:
+                return obj
+            found.append(obj)
+    return found[0] if found else None
+
+
 def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = None) -> Dict | None:
+    """Back-compat wrapper: the verdict, or None (reason available via _llm_verdict)."""
+    return _llm_verdict(subgraph, query, extra_instruction)[0]
+
+
+def _llm_verdict(subgraph: Dict, query: str, extra_instruction: str | None = None) -> tuple[Dict | None, str | None]:
     """Try Ollama via llm/client.py — returns None if offline.
 
     Set ``CYBERGRAPHRAG_OFFLINE=1`` to skip the .env/Ollama LLM (CI, benchmarks
@@ -100,12 +136,14 @@ def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = 
 
     # A key connected from the dashboard is an explicit opt-in and overrides offline mode.
     if get_active() is None and os.getenv("CYBERGRAPHRAG_OFFLINE", "").strip().lower() in ("1", "true", "yes"):
-        return None
+        return None, "offline"
+    model_name = None
     try:
         from llm.client import LLMClient
 
         # Use OpenAI-compatible Ollama (default llm/client handles OPENAI_API_BASE)
         client = LLMClient()  # dashboard connection > .env > local Ollama
+        model_name = client.model
         system_prompt = (
             "You are CyberGraphRAG — an insider-threat analyst. "
             "Given a subgraph (nodes/edges with MITRE ATT&CK where present) and a question, "
@@ -149,20 +187,19 @@ def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = 
         if extra_instruction:
             user_prompt += "\n\n" + extra_instruction
         resp = client.call(system_prompt, user_prompt)
-        text = resp.content.strip()
-        # Strip fences if model wraps JSON
-        if text.startswith("```"):
-            text = "\n".join(l for l in text.splitlines() if not l.strip().startswith("```"))
-        data = json.loads(text)
-        # Validate
-        narrative = data.get("narrative") or data.get("explanation") or ""
+        text = (resp.content or "").strip()
+        if not text:
+            return None, f"{model_name} returned an empty reply (reasoning models can use up their whole token budget thinking)"
+        data = extract_json_object(text)
+        if data is None:
+            return None, f"{model_name} did not reply in the required JSON format"
+        narrative = data.get("narrative") or data.get("explanation") or data.get("answer") or ""
         if not narrative or len(narrative.strip()) < 10:
-            # Small models sometimes return empty — treat as failure to trigger fallback
-            return None
+            return None, f"{model_name} returned no explanation"
         cited = [str(c) for c in (data.get("cited_edges") or [])]
         if not cited and subgraph.get("edges"):
             # Evidence exists but the model cited none: unverifiable, so use the grounded template.
-            return None
+            return None, f"{model_name} cited no evidence, so its answer could not be checked"
         risk = float(data.get("risk_score", score_risk(subgraph)))
         conf = float(data.get("confidence", 0.8))
         ev = int(data.get("evidence_edges", len(subgraph.get("edges", []))))
@@ -177,11 +214,27 @@ def _ollama_verdict(subgraph: Dict, query: str, extra_instruction: str | None = 
             "cited_edges": cited,
             "grounded": True,  # provisional; reasoning.groundedness_checker.check_groundedness sets the real value
             "model": client.model,
-        }
-    except Exception as e:
-        # Ollama offline or JSON malformed — let caller fallback
-        # Uncomment for debug: print(f"Ollama verdict failed: {e}")
-        return None
+        }, None
+    except Exception as e:  # network, timeout, rate limit, auth...
+        log.warning("LLM verdict failed (%s): %s", model_name, e)
+        return None, describe_llm_error(e, model_name)
+
+
+def describe_llm_error(e: Exception, model: str | None) -> str:
+    """A short, honest reason a person can act on."""
+    msg, name = str(e), e.__class__.__name__
+    who = model or "The AI model"
+    if "429" in msg or "RateLimit" in name:
+        return f"{who} is rate-limited (free models allow only a few requests per minute); try again shortly or pick another model"
+    if "402" in msg:
+        return f"{who} needs credit on your OpenRouter account"
+    if "Timeout" in name or "timed out" in msg.lower():
+        return f"{who} took too long to answer; a smaller or faster model may help"
+    if "401" in msg or "403" in msg or "Authentication" in name:
+        return f"{who} rejected the API key"
+    if "Connection" in name or "connect" in msg.lower():
+        return "no AI model could be reached (is Ollama running, or is a key connected?)"
+    return f"{who} failed ({name})"
 
 
 def generate_verdict(subgraph: Dict, query: str, extra_instruction: str | None = None) -> Dict:
@@ -192,8 +245,11 @@ def generate_verdict(subgraph: Dict, query: str, extra_instruction: str | None =
     reasoning.groundedness_checker.check_groundedness, which verifies cited
     edges, retries via ``extra_instruction`` and downgrades if still ungrounded.
     """
-    ollama_result = _ollama_verdict(subgraph, query, extra_instruction)
-    if ollama_result is not None:
-        return ollama_result
-    # Ollama offline / malformed / uncited output -> deterministic template (grounded by construction)
-    return _template_verdict(subgraph, query)
+    result, reason = _llm_verdict(subgraph, query, extra_instruction)
+    if result is not None:
+        return result
+    # Offline / malformed / uncited output -> deterministic template (grounded by construction),
+    # labelled with WHY the model's answer was not used so the UI can say so honestly.
+    verdict = _template_verdict(subgraph, query)
+    verdict["fallback_reason"] = reason
+    return verdict
