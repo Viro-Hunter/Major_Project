@@ -6,7 +6,9 @@ import ModelSettings from './ModelSettings';
 import IncidentQueue from './IncidentQueue';
 import MetricsPanel from './MetricsPanel';
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Same-origin by default: Vite proxies API routes to the backend (see vite.config.mjs).
+// Set VITE_API_URL only when the API lives on a different public URL.
+const API = import.meta.env.VITE_API_URL || '';
 
 export default function DashboardPage() {
   const [entityId, setEntityId] = useState('AAM0658');
@@ -147,7 +149,7 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
               <span style={{ background: 'rgba(255,255,255,0.12)', padding: '6px 10px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>
-                API: <code style={{ color: '#e2e8f0' }}>{API}</code>
+                API: <code style={{ color: '#e2e8f0' }}>{API || 'proxied via dashboard'}</code>
               </span>
               <span style={{ background: health?.status === 'ok' ? '#10b981' : '#f59e0b', padding: '6px 10px', borderRadius: 20, fontWeight: 700 }}>
                 {health?.status === 'ok' ? `● Live • ${health.nodes} nodes / ${health.edges} edges` : '○ Checking...'}
