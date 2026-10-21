@@ -139,6 +139,8 @@ export default function StoryMode() {
   const [i, setI] = useState(() => Math.max(0, parseInt((window.location.hash.split('/')[1] || '0'), 10) || 0));
 
   useEffect(() => {
+    // Standalone export (docs/story.html) embeds the data; the dev server serves it from /public.
+    if (window.__STORY_DATA__) { setS(window.__STORY_DATA__); return; }
     fetch('/story_data.json').then((r) => (r.ok ? r.json() : Promise.reject(r.status))).then(setS)
       .catch(() => setErr('Story data not found. Run: python scripts/build_story.py'));
   }, []);
@@ -147,7 +149,7 @@ export default function StoryMode() {
   const go = useCallback((n) => {
     const k = Math.max(0, Math.min(scenes.length - 1, n));
     setI(k);
-    window.history.replaceState(null, '', `#story/${k}`);
+    try { if (!window.__STORY_DATA__) window.history.replaceState(null, '', `#story/${k}`); } catch { /* sandboxed viewer */ }
   }, [scenes.length]);
 
   useEffect(() => {
@@ -175,7 +177,9 @@ export default function StoryMode() {
         </div>
         {i < scenes.length - 1
           ? <button onClick={() => go(i + 1)} aria-label="Next scene" style={{ borderColor: 'var(--st-amber)' }}>Next →</button>
-          : <a className="btn primary" href="#">Open live dashboard</a>}
+          : window.__STORY_DATA__
+            ? <button onClick={() => go(0)} style={{ borderColor: 'var(--st-amber)' }}>↺ Start again</button>
+            : <a className="btn primary" href="#">Open live dashboard</a>}
       </nav>
     </div>
   );
@@ -381,7 +385,9 @@ function buildScenes(s) {
             Attacker behaviours reference MITRE’s own official records.
           </p>
           <p className="up" style={d(3)}>Checked with the official OASIS STIX validator.</p>
-          <a className="btn primary up" style={d(4)} href="/story_stix_bundle.json" download={`stix_${user}.json`}>Download this case as STIX 2.1</a>
+          <a className="btn primary up" style={d(4)} download={`stix_${user}.json`}
+             href={window.__STORY_STIX__ ? `data:application/json;charset=utf-8,${encodeURIComponent(JSON.stringify(window.__STORY_STIX__, null, 2))}` : '/story_stix_bundle.json'}>
+            Download this case as STIX 2.1</a>
         </div>
         <div className="card up" style={d(3)}>
           <div style={{ fontSize: 13, color: 'var(--st-muted)', marginBottom: 10 }}>This case as {s.stix.total} STIX objects</div>

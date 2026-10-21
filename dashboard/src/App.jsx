@@ -10,7 +10,7 @@ function App() {
     window.addEventListener('hashchange', onChange);
     return () => window.removeEventListener('hashchange', onChange);
   }, []);
-  return hash.startsWith('#story') ? <StoryMode /> : <DashboardPage />;
+  return window.__STORY_DATA__ || hash.startsWith('#story') ? <StoryMode /> : <DashboardPage />;
 }
 
 export default App;
