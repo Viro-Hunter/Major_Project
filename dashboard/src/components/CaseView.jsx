@@ -52,7 +52,7 @@ function ActivityChart({ subgraph, focus }) {
   );
 }
 
-export default function CaseView({ apiBaseUrl, entity, row, technical }) {
+export default function CaseView({ apiBaseUrl, entity, row, technical, onVerdict }) {
   const [subgraph, setSubgraph] = useState(null);
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +97,7 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       setResult(j); setSubgraph(j.subgraph);
+      onVerdict?.(entity, { risk_score: j.verdict.risk_score, verdict_label: j.verdict.verdict_label, confidence_pct: j.verdict.confidence_pct, ai: true });
     } catch (e) { setError(`The investigation could not run (${e.message}).`); }
     setBusy(false);
   };
@@ -163,6 +164,11 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
           {status === 'unverified'
             ? <p className="ui-warn">⚠ Some of the AI's claims could not be found in the logs. The answer is marked unverified and its risk was lowered. Treat it with caution.</p>
             : <p className="ui-ok">✓ Every claim was checked against the original logs ({v.groundedness?.verified_edges?.length || 0} pieces of evidence){status === 'regenerated' ? '. The AI had to correct itself first.' : '.'}</p>}
+          {v.model_risk != null && Math.abs(v.model_risk - v.risk_score) >= 0.05 && (
+            <p className="ui-muted" style={{ margin: '4px 0 0' }}>
+              The AI's own estimate was {Math.round(100 * v.model_risk)}; the risk shown above ({Math.round(100 * v.risk_score)}) is calculated from the evidence, so decisions don't depend on which model answered.
+            </p>
+          )}
           <p className="ui-muted" style={{ margin: '4px 0 0' }}>
             {v.model !== 'template-fallback' ? `Written by ${v.model}.`
               : v.fallback_reason && v.fallback_reason !== 'offline'
@@ -197,7 +203,7 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
                     </div>
                     {b.contribution === 0 && <div className="ui-muted" style={{ fontSize: 12 }}>Common, so it does not add to the risk</div>}
                   </td>
-                  {v && <td>{b.verified ? <span className="ui-ok">✓ Found in logs</span> : <span className="ui-muted">—</span>}</td>}
+                  {v && <td>{b.verified ? <span className="ui-ok">✓ Found in logs</span> : <span className="ui-muted" title="The AI's answer did not mention this item, so it was not part of the check">Not mentioned by the AI</span>}</td>}
                 </tr>
               ))}
               {behaviour.length === 0 && <tr><td colSpan={5} className="ui-muted">No behaviours matching known attacker techniques.</td></tr>}
@@ -261,11 +267,13 @@ export default function CaseView({ apiBaseUrl, entity, row, technical }) {
 
 function Answer({ a, technical }) {
   if (a.error) return <p className="ui-error" style={{ margin: 0 }}>{a.error}</p>;
-  const box = { background: a.refused ? '#f8fafc' : '#ffffff', border: `1px solid ${a.refused ? '#cbd5e1' : '#e2e8f0'}`,
+  const muted = a.refused || a.kind === 'not_in_logs';
+  const box = { background: muted ? '#f8fafc' : '#ffffff', border: `1px solid ${muted ? '#cbd5e1' : '#e2e8f0'}`,
                 borderRadius: '12px 12px 12px 2px', padding: '10px 12px', maxWidth: '92%', overflowWrap: 'anywhere' };
   return (
     <div style={box}>
-      {a.refused && <div className="ui-label" style={{ color: '#475569' }}>🛡 Not something this tool will answer</div>}
+      {a.refused && a.kind === 'protected' && <div className="ui-label" style={{ color: '#475569' }}>🛡 Not something this tool will answer</div>}
+      {a.kind === 'not_in_logs' && <div className="ui-label" style={{ color: '#475569' }}>ℹ Not recorded in the logs</div>}
       <div style={{ lineHeight: 1.5 }}>{a.answer}</div>
       {a.evidence?.length > 0 && (
         <ul style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 13, color: '#334155', lineHeight: 1.6 }}>
@@ -277,8 +285,9 @@ function Answer({ a, technical }) {
         {!a.refused && a.status === 'grounded' && a.cited_edges?.length > 0 && <span className="ui-ok" style={{ margin: 0 }}>✓ Checked against {a.cited_edges.length} log record{a.cited_edges.length > 1 ? 's' : ''}</span>}
         {a.status === 'unverified' && <span style={{ color: '#b91c1c', fontWeight: 600 }}>⚠ Some cited records do not exist; treat with caution</span>}
         {a.model === 'rules-engine' && <span>Answered from the logs directly{a.fallback_reason && a.fallback_reason !== 'offline mode' ? ` (AI model not used: ${a.fallback_reason})` : ''}</span>}
-        {a.model && !['rules-engine', 'scope-guard'].includes(a.model) && <span>Answered by {a.model}</span>}
+        {a.model && !['rules-engine', 'scope-guard'].includes(a.model) && !a.refused && <span>Answered by {a.model}</span>}
         {a.refused && a.model === 'scope-guard' && <span>Declined before reaching the AI · recorded in the audit log</span>}
+        {a.refused && a.kind === 'protected' && a.model !== 'scope-guard' && <span>Declined by the AI · recorded in the audit log</span>}
         {technical && a.cited_edges?.length > 0 && <span className="ui-code">{a.cited_edges.join(', ')}</span>}
       </div>
     </div>

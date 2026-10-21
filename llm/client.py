@@ -188,4 +188,6 @@ class LLMClient:
             completion = client.chat.completions.create(**request)
         choices = completion.choices or []
         content = choices[0].message.content if choices else ""
-        return LLMResponse(content=content or "", model=self.model, raw=completion)
+        # Routers such as openrouter/free pick a model per request: report the one that actually answered.
+        actual = getattr(completion, "model", None) or self.model
+        return LLMResponse(content=content or "", model=actual, raw=completion)

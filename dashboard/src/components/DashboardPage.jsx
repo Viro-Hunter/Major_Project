@@ -18,6 +18,7 @@ export default function DashboardPage() {
   const [row, setRow] = useState(null);
   const [technical, setTechnical] = useState(readPref);
   const [llm, setLlm] = useState(null);
+  const [aiResults, setAiResults] = useState({}); // entity -> checked verdict summary, keeps the list in sync
 
   useEffect(() => {
     fetch(`${API}/health`).then((r) => r.json()).then(setHealth).catch(() => setHealth({ status: 'offline' }));
@@ -58,10 +59,11 @@ export default function DashboardPage() {
         {health?.status === 'offline' && <p className="ui-error">Can't reach the API. Start it with <code>uvicorn api.main:app --port 8000</code>, then reload.</p>}
         <div className="ui-layout">
           <div className="ui-sticky">
-            <PeopleQueue apiBaseUrl={API} selected={selected} technical={technical} onLoaded={onLoaded}
+            <PeopleQueue apiBaseUrl={API} selected={selected} technical={technical} onLoaded={onLoaded} overrides={aiResults}
                          onSelect={(id, r) => { setSelected(id); setRow(r); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
           </div>
-          <CaseView key={selected || 'none'} apiBaseUrl={API} entity={selected} row={row} technical={technical} />
+          <CaseView key={selected || 'none'} apiBaseUrl={API} entity={selected} row={row} technical={technical}
+                    onVerdict={(id, r) => setAiResults((m) => ({ ...m, [id]: r }))} />
         </div>
         <MetricsPanel apiBaseUrl={API} technical={technical} />
         <details className="ui-card" open={false}>

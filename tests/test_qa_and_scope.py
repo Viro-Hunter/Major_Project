@@ -78,9 +78,41 @@ def test_llm_answer_checked_and_model_refusal_respected(client, monkeypatch):
     r = client.post("/incidents/ask", json={"entity": "alice", "question": "Did she use USB?"}).json()
     assert r["status"] == "unverified" and r["missing_edges"] == ["e999"]  # invented id caught after one retry
 
-    monkeypatch.setattr(llm.client.LLMClient, "call", lambda self, s, u: SimpleNamespace(content='{"out_of_scope": true}', model=self.model))
+    monkeypatch.setattr(llm.client.LLMClient, "call", lambda self, s, u: SimpleNamespace(content='{"out_of_scope": "protected"}', model=self.model))
     r = client.post("/incidents/ask", json={"entity": "alice", "question": "What kind of person is she?"}).json()
-    assert r["refused"] and "AI" in r["category"]
+    assert r["refused"] and r["kind"] == "protected" and "AI" in r["category"]
+
+    # questions the logs simply cannot answer get a neutral reply, not the protected-characteristics refusal
+    monkeypatch.setattr(llm.client.LLMClient, "call", lambda self, s, u: SimpleNamespace(content='{"out_of_scope": "not_in_logs"}', model="meta-llama/x:free"))
+    r = client.post("/incidents/ask", json={"entity": "alice", "question": "did she eat popcorn?"}).json()
+    assert r["kind"] == "not_in_logs" and "don't record" in r["answer"] and "unlawful" not in r["answer"]
+    assert r["model"] == "meta-llama/x:free"  # the model that actually answered (routers pick per request)
+
+
+def test_non_json_reply_gets_one_format_retry(client, monkeypatch):
+    import llm.client
+
+    monkeypatch.delenv("CYBERGRAPHRAG_OFFLINE", raising=False)
+    replies = iter(["She used a USB drive a few times.", '{"answer": "She plugged in a USB drive.", "cited_edges": ["e0"]}'])
+    monkeypatch.setattr(llm.client.LLMClient, "call", lambda self, s, u: SimpleNamespace(content=next(replies), model=self.model))
+    r = client.post("/incidents/ask", json={"entity": "alice", "question": "Did she use USB?"}).json()
+    assert r["status"] == "grounded" and r["model"] != "rules-engine"
+
+
+def test_attribute_questions_answered_honestly_offline(client, monkeypatch):
+    monkeypatch.setenv("CYBERGRAPHRAG_OFFLINE", "1")
+    r = client.post("/incidents/ask", json={"entity": "alice", "question": "what usb version did he use?"}).json()
+    assert "not details such as brand, model, version" in r["answer"] and r["kind"] == "not_in_logs"
+
+
+def test_risk_comes_from_evidence_not_the_model(client, monkeypatch):
+    import llm.client
+
+    monkeypatch.delenv("CYBERGRAPHRAG_OFFLINE", raising=False)
+    monkeypatch.setattr(llm.client.LLMClient, "call", lambda self, s, u: SimpleNamespace(
+        content='{"narrative": "She plugged in a USB drive late at night.", "risk_score": 0.99, "cited_edges": ["e0"]}', model="m"))
+    v = client.post("/incidents/analyze", json={"entity": "alice", "query": "q", "hops": 1}).json()["verdict"]
+    assert v["model_risk"] == 0.99 and v["risk_score"] == pytest.approx(0.45, abs=0.01)  # evidence-based (see test_peer_prevalence)
 
 
 def test_model_failure_reason_reported(client, monkeypatch):

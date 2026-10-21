@@ -127,7 +127,7 @@ Only verified evidence is exported. Bundles pass the OASIS `stix2-validator` in 
 ## Testing and evaluation
 
 ```bash
-pytest -q                                   # 152 tests; no API key or model needed
+pytest -q                                   # 155 tests; no API key or model needed
 python scripts/run_pipeline_e2e.py          # all 7 stages on 20 users, per-stage timing; exit 1 on any error
 python evaluation/run_benchmark.py          # five metrics -> evaluation/results/benchmark_report.md
 python scripts/generate_report_assets.py    # figures -> docs/report_assets/, captioned tables -> docs/report_tables.md
@@ -188,7 +188,7 @@ llm/           provider detection, key check, client   action/       action gate
 api/           FastAPI routes                          dashboard/    React dashboard + Story mode
 evaluation/    metrics, benchmark, scenarios, model comparison       scripts/  graph build, e2e, demo, report assets
 data/          demo CERT subset, ATT&CK lookup, MITRE STIX objects   docs/     architecture, design notes, report assets
-tests/         152 tests
+tests/         155 tests
 ```
 
 ## Changelog by week

@@ -3,7 +3,7 @@ import { techPlain, verdictFor } from '../plain';
 
 // "People to review": every employee ranked by how unusual their behaviour is (fast rules-based
 // triage, no AI call). Selecting one opens their case on the right.
-export default function PeopleQueue({ apiBaseUrl, selected, onSelect, onLoaded, technical }) {
+export default function PeopleQueue({ apiBaseUrl, selected, onSelect, onLoaded, technical, overrides = {} }) {
   const [rows, setRows] = useState(null);
   const [error, setError] = useState(null);
   const [q, setQ] = useState('');
@@ -43,7 +43,8 @@ export default function PeopleQueue({ apiBaseUrl, selected, onSelect, onLoaded, 
       </div>
       {error && <p className="ui-error">Could not load the list ({error}). Is the API running?</p>}
       <ul className="ui-list" style={{ listStyle: 'none', margin: 0, padding: 0, overflowY: 'auto', flex: 1, minHeight: 0 }}>
-        {shown.map((r) => {
+        {shown.map((r0) => {
+          const r = overrides[r0.entity] ? { ...r0, ...overrides[r0.entity] } : r0;
           const v = verdictFor(r.verdict_label);
           const top = (r.behaviour || []).filter((b) => b.contribution > 0).slice(0, 2);
           return (
@@ -51,7 +52,11 @@ export default function PeopleQueue({ apiBaseUrl, selected, onSelect, onLoaded, 
               <button onClick={() => onSelect(r.entity, r)} aria-current={selected === r.entity}
                       className={`ui-row${selected === r.entity ? ' on' : ''}`}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                  <b>{r.entity}</b><span className="ui-pill" style={{ background: v.bg, color: v.fg }}>{v.text}</span>
+                  <b>{r.entity}</b>
+                  <span style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {r.ai && <span title="Checked by the AI investigation" style={{ fontSize: 11, color: '#15803d', fontWeight: 700 }}>✓ AI-checked</span>}
+                    <span className="ui-pill" style={{ background: v.bg, color: v.fg }}>{v.text}</span>
+                  </span>
                 </div>
                 <div className="ui-meter" aria-label={`Risk ${Math.round(r.risk_score * 100)} out of 100`}>
                   <div style={{ width: `${Math.round(r.risk_score * 100)}%`, background: v.bar }} />

@@ -132,10 +132,11 @@ class ModelInfo:
     tags: list[str] = field(default_factory=list)
     json_mode: bool = False      # accepts response_format / structured outputs
     reasoning: bool = False      # a "thinking" model: slower, often wraps its JSON in reasoning
+    router: bool = False         # e.g. openrouter/free: forwards each request to a different model
 
     def as_dict(self) -> dict[str, Any]:
         return {k: getattr(self, k) for k in ("id", "name", "free", "context_length", "prompt_price",
-                                              "completion_price", "est_cost_per_verdict", "score", "tags", "json_mode", "reasoning")}
+                                              "completion_price", "est_cost_per_verdict", "score", "tags", "json_mode", "reasoning", "router")}
 
 
 def _price(v: Any) -> Optional[float]:
@@ -187,6 +188,8 @@ def _version_key(model_id: str) -> tuple:
 
 
 def recommend(models: list[ModelInfo], can_pay: bool) -> Optional[ModelInfo]:
+    # Routers answer with a different model each time: results would not be reproducible.
+    models = [m for m in models if not m.router] or models
     if can_pay:
         paid = [m for m in models if not m.free]
         for pat in PAID_PREFERENCE:
@@ -214,7 +217,8 @@ def _openrouter_models(key: str) -> list[ModelInfo]:
                       prompt_price=p, completion_price=c,
                       est_cost_per_verdict=round(EST_PROMPT_TOKENS * p + EST_COMPLETION_TOKENS * c, 6),
                       json_mode=bool(params & {"response_format", "structured_outputs"}),
-                      reasoning=bool(params & {"reasoning", "include_reasoning"}))
+                      reasoning=bool(params & {"reasoning", "include_reasoning"}),
+                      router=d["id"].startswith("openrouter/"))
         m.score = score_free_model(m) if free else 0.0
         out.append(m)
     return out

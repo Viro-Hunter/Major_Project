@@ -104,7 +104,7 @@ export default function ModelSettings({ apiBaseUrl, onStatusChange }) {
 
   const option = (m) => (
     <option key={m.id} value={m.id}>
-      {m.id === check?.recommended ? '★ ' : ''}{m.name} — {priceLabel(m)}{m.context_length ? `, ${Math.round(m.context_length / 1000)}k context` : ''}
+      {m.id === check?.recommended ? '★ ' : ''}{m.name} — {m.router ? 'router: a different model each time, ' : ''}{priceLabel(m)}{m.context_length ? `, ${Math.round(m.context_length / 1000)}k context` : ''}
     </option>
   );
 

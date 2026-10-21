@@ -22,15 +22,22 @@ PLAIN = {
     "T1048": "emailed many outside addresses at once", "T1030": "moved an unusually large amount of data",
     "T1071": "used an upload or file-sharing website", "T1213": "pulled documents from shared repositories",
 }
+ATTRIBUTE_RE = re.compile(
+    r"\b(brand|make|model|version|sandisk|kingston|samsung|lexar|transcend|capacity|size|gb|tb|serial|colou?r|"
+    r"usb ?[23](\.\d)?|which (kind|type)|what (kind|type))\b", re.IGNORECASE)
 QA_SYSTEM = (
     "You are an insider-threat analyst assistant. Answer the analyst's question about ONE employee using ONLY the "
-    "log records provided (each has an id). Rules: (1) Answer only questions about work activity visible in the logs: "
-    "logins, computers, USB devices, files, email, websites and the ATT&CK behaviours they match. (2) If the question "
-    "asks about personal or protected characteristics (sexual orientation, religion, caste, race, health, pregnancy, "
-    "politics, relationships, appearance, age) or anything the logs cannot show, do not speculate: return "
-    '{"out_of_scope": true}. (3) Cite the ids of the records that support each statement; never cite ids that are not '
-    "listed. (4) Plain English, 2-4 sentences, no jargon. Reply with JSON only: "
-    '{"answer": "...", "cited_edges": ["e12", ...]} or {"out_of_scope": true}.'
+    "log records provided (each has an id). Rules: "
+    "(1) Answer only questions about work activity visible in the logs: logins, computers, USB devices, files, email, "
+    "websites and the suspicious behaviours they match. "
+    "(2) If the question asks about personal or protected characteristics (sexual orientation, religion, caste, race, "
+    "health, pregnancy, politics, relationships, appearance, age), reply with {\"out_of_scope\": \"protected\"}. "
+    "If the logs simply do not record what is asked (for example a device brand, what someone ate, their feelings), "
+    "reply with {\"out_of_scope\": \"not_in_logs\"}. Never speculate. "
+    "(3) Cite the ids of the records that support each statement; never cite ids that are not listed. "
+    "(4) Plain English for a non-specialist, 2-4 sentences, with no record ids, technique codes or relation names in "
+    "the answer text (ids go only in cited_edges). "
+    "Reply with JSON only: {\"answer\": \"...\", \"cited_edges\": [\"e12\"]} or {\"out_of_scope\": \"protected\" or \"not_in_logs\"}."
 )
 
 
@@ -105,6 +112,15 @@ def offline_answer(subgraph: dict, focus: str, question: str) -> dict:
     q = question.lower()
     intent = next((name for name, pat in INTENTS if re.search(pat, q)), None)
     recs = _records(subgraph, focus)
+    if ATTRIBUTE_RE.search(q):
+        # e.g. "what USB version / brand?": the logs record THAT it happened, not what the device was
+        rel = REL_FOR.get(intent or "", set())
+        related = [r for r in recs if r["rel"] in rel][-5:]
+        what = {"usb": "a USB drive was plugged in or removed", "email": "an email was sent",
+                "web": "a website was visited", "file": "a file was opened"}.get(intent or "", "something happened")
+        return {"answer": f"The logs record when {what}, but not details such as brand, model, version or size.",
+                "cited_edges": [r["id"] for r in related], "evidence": [r["text"] for r in related],
+                "mode": "offline", "kind": "not_in_logs"}
     chosen: list[dict] = []
     if intent == "night":
         acts = [r for r in recs if r["rel"] != "MATCHES_TECHNIQUE"]
@@ -155,17 +171,30 @@ def llm_answer(subgraph: dict, focus: str, question: str, client: Any) -> dict:
     from reasoning.verdict_generator import extract_json_object
 
     allowed = {r["id"] for r in recs}
-    for attempt in range(2):
-        resp = client.call(QA_SYSTEM, user if attempt == 0 else user + f"\nYou may ONLY cite these ids: {sorted(allowed)[:120]}")
+    format_retry = False
+    attempt = 0
+    while attempt < 2:
+        prompt = user
+        if attempt:
+            prompt += f"\nYou may ONLY cite these ids: {sorted(allowed)[:120]}"
+        if format_retry:
+            prompt += '\nYour previous reply was not JSON. Reply with ONE JSON object and nothing else.'
+        resp = client.call(QA_SYSTEM, prompt)
+        used = getattr(resp, "model", None) or client.model
         data = extract_json_object((resp.content or "").strip())
         if data is None:
-            raise ValueError(f"{client.model} did not reply in the required JSON format")
+            if not format_retry:
+                format_retry = True  # one extra chance, without using up the citation retry
+                continue
+            raise ValueError(f"{used} did not reply in the required JSON format")
         if data.get("out_of_scope"):
-            return {"answer": None, "out_of_scope": True, "cited_edges": [], "evidence": []}
+            kind = "protected" if str(data.get("out_of_scope")).lower() == "protected" else "not_in_logs"
+            return {"answer": None, "out_of_scope": kind, "cited_edges": [], "evidence": [], "model_used": used}
         cited = [str(c) for c in data.get("cited_edges") or []]
         missing = [c for c in cited if c not in allowed]
         if not missing or attempt == 1:
             by_id = {r["id"]: r["text"] for r in recs}
             return {"answer": str(data.get("answer") or "").strip(), "cited_edges": [c for c in cited if c in allowed],
-                    "missing_edges": missing, "evidence": [by_id[c] for c in cited if c in by_id][:8]}
-    return {}  # unreachable
+                    "missing_edges": missing, "evidence": [by_id[c] for c in cited if c in by_id][:8], "model_used": used}
+        attempt += 1
+    return {}

@@ -145,12 +145,15 @@ def _llm_verdict(subgraph: Dict, query: str, extra_instruction: str | None = Non
         client = LLMClient()  # dashboard connection > .env > local Ollama
         model_name = client.model
         system_prompt = (
-            "You are CyberGraphRAG — an insider-threat analyst. "
-            "Given a subgraph (nodes/edges with MITRE ATT&CK where present) and a question, "
-            "produce JSON with keys: narrative (grounded, cite edge types), risk_score (0-1), confidence (0-1), "
+            "You are an insider-threat analyst writing for a non-specialist reader. "
+            "Given a subgraph of one employee's log records (edges with ids, some linked to MITRE ATT&CK behaviours) and "
+            "a question, produce JSON with keys: narrative, risk_score (0-1, your own estimate), confidence (0-1), "
             "evidence_edges (int), cited_edges (list of the exact edge 'id' strings that support your narrative). "
-            "Ground every claim to a real edge and cite ONLY ids that appear in the subgraph — do not hallucinate. "
-            "Map behaviors to ATT&CK STIX 2.1 when relevant."
+            "Write the narrative in plain English, 3-5 sentences: say what the person did and when, why it is unusual, "
+            "and what an analyst should check. Do NOT put edge ids, technique codes (T1005...) or relation names "
+            "(OBSERVED_ON...) in the narrative; put ids only in cited_edges. "
+            "Ground every claim in a real edge and cite ONLY ids that appear in the subgraph. Never speculate about "
+            "the person's character or personal life."
         )
         # Every edge gets a stable id (its own, or positional e<index>) so the model can cite it
         # and reasoning.groundedness_checker can verify it.
@@ -159,6 +162,7 @@ def _llm_verdict(subgraph: Dict, query: str, extra_instruction: str | None = Non
         # Keep subgraph compact for a local small-model context window, but put the
         # ATT&CK evidence-path edges FIRST so they are never truncated away.
         ctx = _context(subgraph)
+        analysis = None
         priority: list[int] = []
         evidence_summary = ""
         if ctx.get("focus"):
@@ -187,6 +191,7 @@ def _llm_verdict(subgraph: Dict, query: str, extra_instruction: str | None = Non
         if extra_instruction:
             user_prompt += "\n\n" + extra_instruction
         resp = client.call(system_prompt, user_prompt)
+        model_name = getattr(resp, "model", None) or model_name  # routers: the model that actually answered
         text = (resp.content or "").strip()
         if not text:
             return None, f"{model_name} returned an empty reply (reasoning models can use up their whole token budget thinking)"
@@ -206,14 +211,20 @@ def _llm_verdict(subgraph: Dict, query: str, extra_instruction: str | None = Non
         # Clamp risk: if model says 0 but edges exist, use calibrated risk
         if risk == 0 and len(subgraph.get("edges", [])) > 0:
             risk = score_risk(subgraph)
+        model_risk = round(max(0.0, min(1.0, risk)), 3)
+        # The decision-driving risk comes from the evidence (deterministic, auditable, the same whichever
+        # model answers). The model's own number is kept for transparency as model_risk.
+        if analysis is not None and analysis["techniques"]:
+            risk = analysis["risk"]
         return {
             "narrative": narrative,
             "risk_score": round(max(0.0, min(1.0, risk)), 3),
+            "model_risk": model_risk,
             "confidence": round(max(0.0, min(1.0, conf)), 3),
             "evidence_edges": ev,
             "cited_edges": cited,
             "grounded": True,  # provisional; reasoning.groundedness_checker.check_groundedness sets the real value
-            "model": client.model,
+            "model": model_name,
         }, None
     except Exception as e:  # network, timeout, rate limit, auth...
         log.warning("LLM verdict failed (%s): %s", model_name, e)

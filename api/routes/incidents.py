@@ -129,7 +129,7 @@ def ask_about_entity(body: AskBody):
     from action.audit_log import log_action
     from llm.runtime import get_active
     from reasoning.qa import llm_answer, offline_answer
-    from reasoning.scope_guard import check_scope, refusal
+    from reasoning.scope_guard import check_scope, not_in_logs, refusal
     from reasoning.verdict_generator import describe_llm_error
 
     question = (body.question or "").strip()[:500]
@@ -138,7 +138,7 @@ def ask_about_entity(body: AskBody):
     if not decision.in_scope:
         log_action("question_refused", {"entity": body.entity, "question": question, "category": decision.category},
                    executed_by="analyst", status="refused")
-        return {**base, "refused": True, "category": decision.category, "answer": decision.message, "model": "scope-guard"}
+        return {**base, "refused": True, "kind": "protected", "category": decision.category, "answer": decision.message, "model": "scope-guard"}
     if not store.graph.has_node(body.entity):
         raise HTTPException(status_code=404, detail=f"unknown entity {body.entity}")
     sg = get_entity_subgraph(store, body.entity, hops=1, query=question)
@@ -153,15 +153,18 @@ def ask_about_entity(body: AskBody):
             client = LLMClient()
             model = client.model
             res = llm_answer(sg, body.entity, question, client)
-            if res.get("out_of_scope"):
-                msg = refusal("personal life or anything the logs cannot show")
-                log_action("question_refused", {"entity": body.entity, "question": question, "category": "model judged out of scope"},
+            used = res.get("model_used") or model
+            if res.get("out_of_scope") == "protected":
+                log_action("question_refused", {"entity": body.entity, "question": question, "category": "protected (judged by the AI)"},
                            executed_by="analyst", status="refused")
-                return {**base, "refused": True, "category": "out of scope (judged by the AI)", "answer": msg, "model": model}
+                return {**base, "refused": True, "kind": "protected", "category": "personal characteristics (judged by the AI)",
+                        "answer": refusal("personal characteristics"), "model": used}
+            if res.get("out_of_scope"):
+                return {**base, "refused": True, "kind": "not_in_logs", "answer": not_in_logs(question), "model": used}
             if res.get("answer"):
                 return {**base, "refused": False, "answer": res["answer"], "cited_edges": res["cited_edges"],
                         "evidence": res["evidence"], "missing_edges": res.get("missing_edges", []),
-                        "status": "unverified" if res.get("missing_edges") else "grounded", "model": model}
+                        "status": "unverified" if res.get("missing_edges") else "grounded", "model": used}
             reason = f"{model} returned an empty answer"
         except ValueError as exc:
             reason = str(exc)
@@ -170,7 +173,7 @@ def ask_about_entity(body: AskBody):
     fb = offline_answer(sg, body.entity, question)
     return {**base, "refused": False, "answer": fb["answer"], "cited_edges": fb["cited_edges"], "evidence": fb["evidence"],
             "more": fb.get("more", 0), "status": "grounded" if fb["cited_edges"] else "n/a",
-            "model": "rules-engine", "fallback_reason": reason or ("offline mode" if offline else None),
+            "model": "rules-engine", "fallback_reason": reason or ("offline mode" if offline else None), "kind": fb.get("kind"),
             "supported": fb["mode"] != "offline-unsupported"}
 
 

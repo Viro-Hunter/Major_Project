@@ -60,3 +60,9 @@ def refusal(category: str) -> str:
             "logs (logins, USB devices, files, email and websites), and using personal characteristics to judge "
             "someone would be unfair and, in most places, unlawful. If you meant an activity, ask about the "
             "activity itself, for example: \"Did this person email anyone outside the company late at night?\"")
+
+
+def not_in_logs(question: str = "") -> str:
+    """Neutral reply for questions the logs simply cannot answer (no ethics lecture needed)."""
+    return ("The logs don't record that. They only show work activity: logins and computers used, USB drives being "
+            "plugged in or removed, files opened, emails sent and websites visited. Try asking about one of those.")

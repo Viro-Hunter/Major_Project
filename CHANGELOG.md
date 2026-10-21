@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.4.0-sem7] - 2026-10-21
+
+### Fixed
+- Questions the logs simply cannot answer ("did he eat popcorn?", "was it a SanDisk?") received the protected-characteristics refusal; they now get a neutral "not recorded in the logs" reply. The AI distinguishes `protected` from `not_in_logs`.
+- Questions about device brand/version/size are answered honestly offline ("the logs record when, not the brand or version").
+- The verdict's risk score came from whichever model answered, so the same evidence could be "Needs review" or "High risk" (and trigger escalation). Risk is now calculated from the evidence; the model's own estimate is shown as `model_risk`.
+- `openrouter/free` (a router that sends each request to a different model) could be recommended; routers are never recommended and are labelled in the model list. The UI names the model that actually answered.
+- A non-JSON reply now gets one format retry before falling back.
+- The AI narrative is written in plain English, without edge ids, technique codes or relation names.
+- The people list now updates after an investigation (with an "AI-checked" mark); "—" in the Checked column now reads "Not mentioned by the AI".
+
 ## [1.3.0-sem7] - 2026-10-21
 
 ### Added
