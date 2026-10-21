@@ -35,8 +35,10 @@ def _r(x: float, n: int = 3) -> float:
 
 
 def run(args) -> dict:
-    if not args.llm:
-        os.environ["CYBERGRAPHRAG_OFFLINE"] = "1"
+    os.environ["CYBERGRAPHRAG_OFFLINE"] = "0" if args.llm else "1"
+    tag = f"_{args.tag}" if getattr(args, "tag", "") else ""
+    extractor = getattr(args, "extractor", "rules")
+    sleep_s = float(getattr(args, "sleep", 0.0) or 0.0)
     # fault injection triggers the checker's warnings on purpose; keep the console readable
     logging.getLogger("reasoning.groundedness_checker").setLevel(logging.CRITICAL)
     from evaluation import metrics as M
@@ -56,8 +58,15 @@ def run(args) -> dict:
     timer = M.ResponseTimer()
 
     print("[2/6] indexing (extraction + graph build) ...", flush=True)
+    enrichment = None
     with timer.measure("indexing", f"{sum(map(len, ls.rows_by_log.values()))} rows"):
         store = build_graph_from_rows(ls.rows_by_log, labeled_users={u for u, y in ls.labels.items() if y})
+        if extractor == "hybrid":
+            from extraction.llm_enrichment import enrich_with_llm
+            from llm.client import LLMClient
+
+            print("      hybrid extraction: LLM enrichment of event windows ...", flush=True)
+            enrichment = enrich_with_llm(store, ls.rows_by_log, LLMClient(), windows_per_user=1).as_dict()
     g = store.graph
 
     # Metric 2: graph completeness against ids derived independently from the raw rows
@@ -75,7 +84,11 @@ def run(args) -> dict:
              "recovered_by_retry": 0, "flagged_unverified": 0, "retries": 0}
 
     print(f"[3/6] querying {len(ls.labels)} users ...", flush=True)
-    for user in sorted(ls.labels):
+    for i, user in enumerate(sorted(ls.labels)):
+        if sleep_s and i:
+            import time as _time
+
+            _time.sleep(sleep_s)  # stay under free-model rate limits
         q = question_tmpl.format(user=user)
         with timer.measure("query_total", user):
             route = classify_query(q)
@@ -157,7 +170,7 @@ def run(args) -> dict:
     # Metric 4: response time
     times = timer.summary()
     RESULTS.mkdir(parents=True, exist_ok=True)
-    timer.write_csv(RESULTS / "timings.csv")
+    timer.write_csv(RESULTS / f"timings{tag}.csv")
 
     groundedness_live = Counter(r["groundedness"] for r in per_user)
     models = Counter(r["model"] for r in per_user)
@@ -166,6 +179,7 @@ def run(args) -> dict:
         "config": {k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()},
         "label_mode": ls.mode, "data_source": data_source(), "notes": ls.notes,
         "models": dict(models), "detection_threshold": DETECTION_THRESHOLD,
+        "extractor": extractor, "llm_enrichment": enrichment,
         "dataset": {"users": len(labels), "insiders": sum(labels.values()), "benign": len(labels) - sum(labels.values()),
                     "rows": {k: len(v) for k, v in ls.rows_by_log.items()}, "malicious_rows": len(ls.malicious_ids),
                     "graph_nodes": g.number_of_nodes(), "graph_edges": g.number_of_edges()},
@@ -198,7 +212,7 @@ def run(args) -> dict:
             "false_alarm_rate": _r(fault["clean_false_alarms"] / fault["clean_verdicts"]) if fault["clean_verdicts"] else None,
         },
     }
-    with (RESULTS / "per_user.csv").open("w", newline="") as fh:
+    with (RESULTS / f"per_user{tag}.csv").open("w", newline="") as fh:
         cols = ["user", "label", "scenario", "risk", "verdict_label", "confidence_pct", "groundedness", "model",
                 "risk_no_peer_baseline", "any_technique", "evidence_techniques"]
         w = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
@@ -207,9 +221,9 @@ def run(args) -> dict:
             w.writerow({**r, "risk": f"{r['risk']:.4f}", "risk_no_peer_baseline": f"{r['risk_no_peer_baseline']:.4f}",
                         "evidence_techniques": " ".join(t.split(':')[-1] for t in r["evidence_techniques"])})
     print("[5/6] writing report ...", flush=True)
-    (RESULTS / "benchmark.json").write_text(json.dumps(result, indent=2, default=str))
-    (RESULTS / "benchmark_report.md").write_text(render_markdown(result))
-    print(f"[6/6] done -> {RESULTS / 'benchmark_report.md'}", flush=True)
+    (RESULTS / f"benchmark{tag}.json").write_text(json.dumps(result, indent=2, default=str))
+    (RESULTS / f"benchmark_report{tag}.md").write_text(render_markdown(result))
+    print(f"[6/6] done -> {RESULTS / f'benchmark_report{tag}.md'}", flush=True)
     return result
 
 
@@ -232,6 +246,7 @@ def render_markdown(r: dict) -> str:
         f"{sum(ds['rows'].values()):,} log rows ({ds['malicious_rows']} malicious)",
         f"- **Graph:** {ds['graph_nodes']:,} nodes, {ds['graph_edges']:,} edges",
         f"- **Verdict model:** " + ", ".join(f"`{m}` ×{n}" for m, n in r["models"].items()),
+        f"- **Extraction:** `{r.get('extractor', 'rules')}`" + (f" — LLM enrichment {r['llm_enrichment']}" if r.get("llm_enrichment") else ""),
         f"- **Detection rule:** user flagged when checked risk ≥ {r['detection_threshold']} (the `suspicious` verdict boundary); seed {r['config']['seed']}",
         "",
         "## Table 1 — Headline metrics",
@@ -307,7 +322,10 @@ def main() -> int:
     ap.add_argument("--insiders", type=int, default=12)
     ap.add_argument("--rows-per-user", type=int, default=60)
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--llm", action="store_true")
+    ap.add_argument("--llm", action="store_true", help="verdicts from the configured model (.env / OPENROUTER_*)")
+    ap.add_argument("--extractor", choices=["rules", "hybrid"], default="rules", help="hybrid = rules + LLM enrichment")
+    ap.add_argument("--tag", default="", help="suffix for output files, e.g. llm -> benchmark_llm.json")
+    ap.add_argument("--sleep", type=float, default=0.0, help="seconds between queries (free models are rate-limited)")
     ap.add_argument("--hallucination-rate", type=float, default=0.3)
     ap.add_argument("--retry-failure-rate", type=float, default=0.5)
     args = ap.parse_args()

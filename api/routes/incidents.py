@@ -92,6 +92,18 @@ async def query_incident(payload: IncidentQuery) -> dict[str, Any]:
     return {"route": route, "entity_id": payload.entity_id, "question": payload.question, **_serialize_result(result), "verdict": verdict}
 
 
+@router.get("/incidents/{entity}/stix")
+def incident_stix(entity: str, query: str = Query("Is this user exfiltrating data or behaving like an insider threat?")):
+    """The checked verdict for ``entity`` as a STIX 2.1 bundle (MITRE ATT&CK objects embedded natively)."""
+    from intel.stix_export import build_stix_bundle
+
+    if not store.graph.has_node(entity):
+        raise HTTPException(status_code=404, detail=f"unknown entity {entity}")
+    sg = get_entity_subgraph(store, entity, hops=1, query=query)
+    verdict = run_checked_verdict(sg, entity, query)
+    return build_stix_bundle(verdict, sg, entity)
+
+
 @router.get("/incidents/queue")
 async def incident_queue(limit: int = Query(25, ge=1, le=500), min_risk: float = Query(0.0, ge=0.0, le=1.0)):
     """Fast triage queue: every User scored with the evidence-path behavioural risk (no LLM call).

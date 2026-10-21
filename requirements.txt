@@ -11,3 +11,5 @@ httpx
 pydantic
 python-multipart
 matplotlib
+stix2
+stix2-validator==3.2.0  # 3.3.1 wheel ships without its JSON schemas

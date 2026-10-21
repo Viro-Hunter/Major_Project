@@ -59,7 +59,7 @@ def main() -> int:
     ap.add_argument("--rows-per-user", type=int, default=60)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--llm", action="store_true", help="use the configured LLM for verdicts (default: offline template)")
-    ap.add_argument("--llm-extract", action="store_true", help="also run LLM entity extraction on one 5-event window")
+    ap.add_argument("--llm-extract", action="store_true", help="hybrid extraction: add LLM-inferred relations to the rule graph")
     ap.add_argument("--question", default="Is this user exfiltrating data or behaving like an insider threat?")
     ap.add_argument("--output", type=Path, default=ROOT / "evaluation" / "results" / "e2e_run.json")
     args = ap.parse_args()
@@ -99,19 +99,17 @@ def main() -> int:
         log.info("ingestion: %d users, %d rows normalized (%d rejected) from %s data",
                  len(users), parsed, bad, report["data_source"])
 
-    # 2. Extraction (+ optional LLM extraction sample) -------------------------
-    if args.llm_extract:
-        with Stage(report, "extraction_llm_sample"):
-            from extraction.entity_extractor import extract
-            from llm.client import LLMClient
-            window = [parse_row(LogType(n), r) for n in ("logon", "device", "file") for r in rows_by_log.get(n, [])[:2]][:5]
-            ents, rels = extract(LLMClient(), window)
-            report["extraction_llm_sample"] = {"entities": len(ents), "relations": len(rels)}
-            log.info("LLM extraction sample: %d entities, %d relations", len(ents), len(rels))
-
-    # 3. Graph -----------------------------------------------------------------
+    # 2-3. Extraction + graph (rules), then optional LLM enrichment (hybrid) -----
     with Stage(report, "extraction+graph"):
         store = build_graph_from_rows(rows_by_log)
+    if args.llm_extract and store is not None:
+        with Stage(report, "extraction_llm_enrichment"):
+            from extraction.llm_enrichment import enrich_with_llm
+            from llm.client import LLMClient
+            stats = enrich_with_llm(store, rows_by_log, LLMClient(), windows_per_user=1)
+            report["llm_enrichment"] = stats.as_dict()
+            log.info("LLM enrichment: %s", stats.as_dict())
+    if store is not None:
         g = store.graph
         report["graph"] = {"nodes": g.number_of_nodes(), "edges": g.number_of_edges(),
                            "node_types": dict(Counter(d.get("type") for _, d in g.nodes(data=True))),
