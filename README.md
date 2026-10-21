@@ -7,6 +7,12 @@ Guide: Er. Pragati Pal · Release `v1.1-sem7`
 
 > **See it first:** open the dashboard and click **▶ Story mode**, or double-click [`docs/story.html`](docs/story.html), a 12-scene walkthrough of one insider case written for non-technical audiences. No install needed.
 
+| Case file (plain language by default) | Evidence graph (checked links in green) |
+|---|---|
+| ![Case overview](docs/screenshots/case-overview.png) | ![Evidence graph](docs/screenshots/evidence-graph.png) |
+
+The dashboard speaks plain language by default. Switch on **Technical details** in the header to see raw IDs, edge lists, ATT&CK codes, graph depth and the formal metrics.
+
 ---
 
 ## What it does
@@ -113,7 +119,7 @@ Only verified evidence is exported. Bundles pass the OASIS `stix2-validator` in 
 ## Testing and evaluation
 
 ```bash
-pytest -q                                   # 129 tests; no API key or model needed
+pytest -q                                   # 130 tests; no API key or model needed
 python scripts/run_pipeline_e2e.py          # all 7 stages on 20 users, per-stage timing; exit 1 on any error
 python evaluation/run_benchmark.py          # five metrics -> evaluation/results/benchmark_report.md
 python scripts/generate_report_assets.py    # figures -> docs/report_assets/, captioned tables -> docs/report_tables.md
@@ -174,8 +180,34 @@ llm/           provider detection, key check, client   action/       action gate
 api/           FastAPI routes                          dashboard/    React dashboard + Story mode
 evaluation/    metrics, benchmark, scenarios, model comparison       scripts/  graph build, e2e, demo, report assets
 data/          demo CERT subset, ATT&CK lookup, MITRE STIX objects   docs/     architecture, design notes, report assets
-tests/         129 tests
+tests/         130 tests
 ```
+
+## Changelog by week
+
+What each week of the Semester 7 plan delivered. Commit dates are the real dates in `git log`; Weeks 9–12 were integrated and pushed in October 2026. Day-by-day detail is in [CHANGELOG.md](CHANGELOG.md), and the logbook wording is in [docs/WEEKLY_LOG.md](docs/WEEKLY_LOG.md).
+
+| Week | Planned | Delivered (where in the repo) |
+|---|---|---|
+| 1 | Scope, architecture, repo scaffold | Folder structure (`ingestion/`, `extraction/`, `graph/`, `retrieval/`, `reasoning/`, `evaluation/`), FastAPI app with `/health`, React + Vite dashboard skeleton |
+| 2 | Literature survey, data sources | Survey of 7 papers; CERT r4.2 exploration (`scripts/explore_cert.py`, `docs/cert_dataset_notes.md`) |
+| 3 | Problem statement, graph schema | Entity/relation schema (`graph/schema.py`); CERT preprocessing into a working subset (`data/demo/`) |
+| 4 | Ingestion + extraction pipeline | `ingestion/log_parser.py`; LLM entity/relation extractor with prompt template (`extraction/`) |
+| 5 | Knowledge graph + ATT&CK mapping | `graph/graph_store.py`; behaviour → technique lookup (`data/attack_technique_lookup.json`); graph view in the dashboard |
+| 6 | GraphRAG retrieval + router | `retrieval/graph_retriever.py`; rule-based `retrieval/router.py` (structural / lookup / hybrid) |
+| 7 | LLM reasoning, first end-to-end verdict | `reasoning/verdict_generator.py`; verdict and risk shown on the dashboard |
+| 8 | Groundedness self-check (core novelty) | `reasoning/groundedness_checker.py`: verify cited edges, regenerate ≤ 2×, else downgrade + `[unverified]`; `docs/groundedness_design.md` |
+| 9 | Integration + confidence propagation | `graph/confidence.py` (Π confidence × 0.95/day decay); `reasoning/evidence.py`, `reasoning/confidence_scoring.py`; `scripts/run_pipeline_e2e.py`; incident queue; edge-endpoint bug fix; retrieval 852 → 16 ms |
+| 10 | Evaluation metrics | `evaluation/metrics.py`, `evaluation/run_benchmark.py`, `evaluation/scenarios.py` (five metrics, ablation, baseline, groundedness fault injection); metrics panel |
+| 11 | Report writing + assets | `scripts/generate_report_assets.py` (figures, captioned tables, architecture summary); accurate `docs/ARCHITECTURE.md` |
+| 12 | Final polish, demo, presentation | `scripts/demo.py` live walkthrough; README setup; tag `v1.0-sem7` |
+
+**After Week 12 (presentation readiness, `v1.1`–`v1.2`)**
+- **Model choice:** pasted API keys are auto-detected (OpenRouter, Anthropic, OpenAI, Groq, Gemini); the system checks credit and picks paid or free models (`llm/providers.py`).
+- **Native STIX 2.1 export:** uses MITRE's official ATT&CK objects and is validated with the OASIS validator (`intel/stix_export.py`).
+- **Hybrid LLM extraction:** extraction-time grounding (`extraction/llm_enrichment.py`) and a template-vs-LLM comparison (`evaluation/compare_models.py`).
+- **Story mode:** a 12-scene presentation for non-technical audiences, also available as one offline file (`docs/story.html`).
+- **Dashboard redesign:** plain language by default with a Technical details switch. People-to-review list, case file, verified-evidence table with colleague comparison, a stable evidence-first graph, an activity chart, outcome-based metrics, and no sideways overflow on laptop, projector or phone.
 
 ## Documentation
 

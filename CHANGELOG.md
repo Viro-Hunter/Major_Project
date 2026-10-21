@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.2.0-sem7] - 2026-10-21
+
+### Changed
+- Dashboard redesigned for operators and non-specialists: plain language by default, "Technical details" switch for raw IDs/edges/ATT&CK codes/formal metrics.
+- People-to-review list (search, sort, "only needs review"), case file with verdict, risk and certainty meters, plain summary and recommendation.
+- "Why we think so" table: each behaviour with when, how often, share of colleagues who do the same, and ✓ found-in-logs after the AI check.
+- Evaluation shown as outcomes (insiders caught, false alarms, invented claims caught, answer time).
+
+### Fixed
+- Graph showed strangers' highest-confidence edges instead of the investigated person; it now shows the person's evidence chain (person → what they used → behaviour), with "Everything they used" as an alternative view.
+- Graph stretching and drifting (hierarchical layout + physics toggle): positions are now computed and fixed; edge labels moved to hover tooltips; overlapping labels removed.
+- Edge counts in the graph header did not add up (counted before vs after grouping).
+- Tables overflowed their cards and the page; all tables now scroll inside their card, verified at 1366×768, 1920×1080 and 390×844.
+- Dashboard opened on a placeholder user with no activity; it now opens the highest-risk person.
+
 ## [1.1.0-sem7] - 2026-10-21
 
 ### Added
