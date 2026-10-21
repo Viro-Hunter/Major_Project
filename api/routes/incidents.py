@@ -56,6 +56,23 @@ def peer_prevalence(graph_store_: GraphStore | None = None) -> dict[str, float]:
     return _prevalence_cache["value"]
 
 
+def behaviour_summary(analysis: dict, verified_techniques: set | None = None) -> list[dict]:
+    """Per ATT&CK technique: how often, when, how common among colleagues — for the plain-language case view."""
+    times: dict[str, list[str]] = {}
+    for p in analysis["paths"]:
+        times.setdefault(p["technique"], []).append(str(p.get("timestamp") or ""))
+    out = []
+    for c in analysis["techniques"]:
+        ts = sorted(t for t in times.get(c["technique"], []) if t)
+        out.append({
+            "technique_id": c["technique_id"], "pattern": c["pattern"], "support": c["support"],
+            "peer_prevalence": c["peer_prevalence"], "path_confidence": c["path_confidence"],
+            "contribution": c["contribution"], "first_seen": ts[0] if ts else None, "last_seen": ts[-1] if ts else None,
+            "verified": None if verified_techniques is None else c["technique"] in verified_techniques,
+        })
+    return out
+
+
 def run_checked_verdict(subgraph: dict, entity: str, query: str) -> dict:
     """verdict_generator -> groundedness_checker -> confidence (the Week 9 pipeline tail)."""
     subgraph[CONTEXT_KEY] = {"focus": entity, "prevalence": peer_prevalence()}
@@ -68,7 +85,10 @@ def run_checked_verdict(subgraph: dict, entity: str, query: str) -> dict:
 
         verdict = check_groundedness(verdict, subgraph, regenerate=regenerate)
         # Week 9: propagated confidence over VERIFIED evidence paths only
-        return attach_confidence(verdict, subgraph, entity)
+        verdict = attach_confidence(verdict, subgraph, entity)
+        analysis = behavioral_risk(subgraph, entity, subgraph[CONTEXT_KEY]["prevalence"])
+        verdict["behaviour"] = behaviour_summary(analysis, set(verdict.get("evidence_techniques") or []))
+        return verdict
     finally:
         subgraph.pop(CONTEXT_KEY, None)
 
@@ -126,6 +146,7 @@ async def incident_queue(limit: int = Query(25, ge=1, le=500), min_risk: float =
             "propagated_confidence": analysis["propagated_confidence"],
             "confidence_pct": round(100 * analysis["propagated_confidence"], 1),
             "techniques": [c["technique_id"] for c in analysis["techniques"]],
+            "behaviour": behaviour_summary(analysis),
             "evidence_paths": len(analysis["paths"]),
             "decision": should_auto_execute(analysis["risk"]),
         })

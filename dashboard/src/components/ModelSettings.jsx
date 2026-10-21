@@ -111,7 +111,7 @@ export default function ModelSettings({ apiBaseUrl, onStatusChange }) {
   return (
     <section style={{ ...card, marginBottom: 18 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>Reasoning model</h3>
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>AI model</h3>
         <span style={{ fontSize: 13, color: '#334155' }}>
           {status ? (
             <>

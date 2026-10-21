@@ -93,3 +93,20 @@ def test_api_returns_confidence_and_queue(monkeypatch):
     q = client.get("/incidents/queue?limit=10").json()
     assert q["incidents"][0]["entity"] == "alice"
     assert {"risk_score", "confidence_pct", "verdict_label", "techniques"} <= set(q["incidents"][0])
+
+
+def test_behaviour_summary_in_queue_and_verdict(monkeypatch):
+    monkeypatch.setenv("CYBERGRAPHRAG_OFFLINE", "1")
+    from api.main import app
+    import graph.graph_store as gs
+
+    s = _store()
+    monkeypatch.setattr(gs.store, "graph", s.graph)
+    monkeypatch.setattr(gs.store, "g", s.graph)
+    c = TestClient(app)
+    row = c.get("/incidents/queue").json()["incidents"][0]
+    b = {x["technique_id"]: x for x in row["behaviour"]}
+    assert b["T1052"]["peer_prevalence"] == 0.25 and b["T1052"]["first_seen"] == T and b["T1052"]["verified"] is None
+    v = c.post("/incidents/analyze", json={"entity": "alice", "query": "q", "hops": 1}).json()["verdict"]
+    vb = {x["technique_id"]: x for x in v["behaviour"]}
+    assert vb["T1052"]["verified"] is True and vb["T1052"]["support"] == 2
