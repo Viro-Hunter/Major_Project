@@ -2,6 +2,17 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.0-sem7] - 2026-10-21
+
+### Added
+- Native STIX 2.1 export (`intel/stix_export.py`, `GET /incidents/{entity}/stix`) embedding MITRE's official ATT&CK attack-pattern objects; validated with the OASIS stix2-validator.
+- Hybrid LLM extraction (`extraction/llm_enrichment.py`) with extraction-time grounding and a 0.6 confidence cap; `--extractor hybrid` / `--llm-extract`.
+- `evaluation/compare_models.py`: template vs real LLM (vs LLM + LLM extraction) on the same labelled set, including live groundedness statistics.
+- Story mode (`#story`): 12-scene presenter walkthrough for non-technical audiences, generated from a real run by `scripts/build_story.py`.
+
+### Fixed
+- The extraction prompt's relation vocabulary did not match the parser's schema, so most relations a real LLM returned would have been dropped.
+
 ## [1.0.0-sem7] - 2026-10-20
 
 ### Added

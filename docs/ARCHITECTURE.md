@@ -24,6 +24,7 @@ flowchart LR
 |---|---|---|
 | Ingestion | `ingestion/log_parser.py`, `ingestion/cert_loader.py` | Normalises each CERT row into an `Event`; loads per-user rows from `data/raw` or the committed `data/demo` subset |
 | Extraction | `scripts/build_graph_from_cert.py` (`ingest_row`, `build_graph_from_rows`) | Deterministic CERT extraction into story chains; `extraction/entity_extractor.py` is the LLM extractor for unstructured logs |
+| LLM extraction (hybrid) | `extraction/llm_enrichment.py` | Optional: LLM-inferred implicit relations from event windows; entities must appear in the window text; confidence ≤ 0.6 |
 | Graph | `graph/graph_store.py`, `graph/schema.py`, `data/attack_technique_lookup.json` | NetworkX `MultiDiGraph`; 8 behaviour patterns mapped to ATT&CK technique ids with severity |
 | Routing | `retrieval/router.py` | Rule-based `structural` / `lookup` / `hybrid` classifier behind a swappable `QueryClassifier` interface (Sem 8: learned classifier) |
 | Retrieval | `retrieval/graph_retriever.py` | Bounded BFS over edges above a confidence threshold; ranks paths by keyword relevance, hops and propagated confidence |
@@ -34,6 +35,8 @@ flowchart LR
 | LLM access | `llm/client.py`, `llm/providers.py`, `llm/runtime.py` | Provider-agnostic client; key auto-detection, credit check, paid-vs-free model recommendation |
 | API | `api/routes/*.py` | `/incidents/analyze`, `/incidents/query`, `/incidents/queue`, `/graph/*`, `/llm/*`, `/metrics/benchmark` |
 | Dashboard | `dashboard/src/components/*.jsx` | Model panel, incident queue, entity graph, timeline, verdict with evidence trail, metrics panel |
+| STIX 2.1 | `intel/stix_export.py`, `data/attack_patterns.stix21.json` | Checked verdict → STIX 2.1 bundle with MITRE's official attack-pattern objects; OASIS-validated |
+| Story mode | `scripts/build_story.py`, `dashboard/src/components/StoryMode.jsx` | Presenter walkthrough for non-technical audiences, generated from a real run |
 | Evaluation | `evaluation/metrics.py`, `evaluation/run_benchmark.py`, `evaluation/scenarios.py` | Five Objective-5 metrics, ablation, naive baseline, groundedness fault injection |
 
 ## Key design decisions

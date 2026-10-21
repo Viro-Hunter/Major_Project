@@ -1,0 +1,717 @@
+{
+  "type": "bundle",
+  "id": "bundle--176051b0-0d7c-466d-8016-2e28ea459558",
+  "objects": [
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "created": "2017-06-01T00:00:00.000Z",
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-05-12T16:33:30.227Z",
+      "name": "The MITRE Corporation",
+      "identity_class": "organization",
+      "x_mitre_attack_spec_version": "3.2.0"
+    },
+    {
+      "definition": {
+        "statement": "Copyright 2015-2026, The MITRE Corporation. MITRE ATT&CK and ATT&CK are registered trademarks of The MITRE Corporation."
+      },
+      "id": "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168",
+      "type": "marking-definition",
+      "spec_version": "2.1",
+      "created": "2017-06-01T00:00:00.000Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "definition_type": "statement"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--40597f16-0963-4249-bf4c-ac93b7fb9807",
+      "created": "2020-03-09T12:51:45.570Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "revoked": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/techniques/T1567",
+          "external_id": "T1567"
+        }
+      ],
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-05-12T15:12:00.628Z",
+      "name": "Exfiltration Over Web Service",
+      "description": "Adversaries may use an existing, legitimate external Web service to exfiltrate data rather than their primary command and control channel. Popular Web services acting as an exfiltration mechanism may give a significant amount of cover due to the likelihood that hosts within a network are already communicating with them prior to compromise. Firewall rules may also already exist to permit traffic to these services.\n\nWeb service providers also commonly use SSL/TLS encryption, giving adversaries an added level of protection.",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "exfiltration"
+        }
+      ],
+      "x_mitre_attack_spec_version": "3.3.0",
+      "x_mitre_contributors": [
+        "William Cain"
+      ],
+      "x_mitre_deprecated": false,
+      "x_mitre_domains": [
+        "enterprise-attack"
+      ],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_modified_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "x_mitre_platforms": [
+        "ESXi",
+        "Linux",
+        "macOS",
+        "Office Suite",
+        "SaaS",
+        "Windows"
+      ],
+      "x_mitre_version": "1.5"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--3c4a2599-71ee-4405-ba1e-0e28414b4bc5",
+      "created": "2017-05-31T21:30:20.537Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "revoked": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/techniques/T1005",
+          "external_id": "T1005"
+        },
+        {
+          "source_name": "show_run_config_cmd_cisco",
+          "description": "Cisco. (2022, August 16). show running-config - Cisco IOS Configuration Fundamentals Command Reference . Retrieved July 13, 2022.",
+          "url": "https://www.cisco.com/c/en/us/td/docs/ios-xml/ios/fundamentals/command/cf_command_ref/show_protocols_through_showmon.html#wp2760878733"
+        },
+        {
+          "source_name": "Mandiant APT41 Global Intrusion ",
+          "description": "Gyler, C.,Perez D.,Jones, S.,Miller, S.. (2021, February 25). This is Not a Test: APT41 Initiates Global Intrusion Campaign Using Multiple Exploits. Retrieved February 17, 2022.",
+          "url": "https://www.mandiant.com/resources/apt41-initiates-global-intrusion-campaign-using-multiple-exploits"
+        },
+        {
+          "source_name": "US-CERT-TA18-106A",
+          "description": "US-CERT. (2018, April 20). Alert (TA18-106A) Russian State-Sponsored Cyber Actors Targeting Network Infrastructure Devices. Retrieved October 19, 2020.",
+          "url": "https://www.us-cert.gov/ncas/alerts/TA18-106A"
+        }
+      ],
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-09-11T19:59:22.966Z",
+      "name": "Data from Local System",
+      "description": "Adversaries may search local system sources, such as file systems, configuration files, local databases, virtual machine files, or process memory, to find files of interest and sensitive data prior to Exfiltration.\n\nAdversaries may do this using a [Command and Scripting Interpreter](https://attack.mitre.org/techniques/T1059), such as [cmd](https://attack.mitre.org/software/S0106) as well as a [Network Device CLI](https://attack.mitre.org/techniques/T1059/008), which have functionality to interact with the file system to gather information.(Citation: show_run_config_cmd_cisco) Adversaries may also use [Automated Collection](https://attack.mitre.org/techniques/T1119) on the local system.\n",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "collection"
+        }
+      ],
+      "x_mitre_attack_spec_version": "3.3.0",
+      "x_mitre_contributors": [
+        "William Cain",
+        "Austin Clark, @c2defense",
+        "Liran Ravich, CardinalOps"
+      ],
+      "x_mitre_deprecated": false,
+      "x_mitre_domains": [
+        "enterprise-attack"
+      ],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_modified_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "x_mitre_platforms": [
+        "ESXi",
+        "Linux",
+        "macOS",
+        "Network Devices",
+        "Windows"
+      ],
+      "x_mitre_version": "1.8"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--e6415f09-df0e-48de-9aba-928c902b7549",
+      "created": "2017-05-31T21:30:46.461Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "revoked": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/techniques/T1052",
+          "external_id": "T1052"
+        },
+        {
+          "source_name": "USB Drives Threaten Enterprise Security",
+          "description": "Crowdstrike. (2026, January 21). Small Devices, Big Risk: USB Drives Threaten Enterprise Security. Retrieved September 3, 2026.",
+          "url": "https://www.crowdstrike.com/en-us/blog/usb-drives-threaten-enterprise-security/"
+        },
+        {
+          "source_name": "Tropic Trooper\u2019s USBferry",
+          "description": "Trend Micro: Joey Chen. (2020, May 12). Tropic Trooper\u2019s USBferry Targets Air-Gapped Networks. Retrieved September 3, 2026.",
+          "url": "https://www.trendmicro.com/en_us/research/20/e/tropic-troopers-back-usbferry-attack-targets-air-gapped-environments.html"
+        },
+        {
+          "source_name": "APT37 Adds New Capabilities for Air-Gapped Networks",
+          "description": "Zscaler: Seongsu Park. (2026, February 26). APT37 Adds New Capabilities for Air-Gapped Networks. Retrieved September 3, 2026.",
+          "url": "https://www.zscaler.com/blogs/security-research/apt37-adds-new-capabilities-air-gapped-networks"
+        }
+      ],
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-09-03T19:19:40.603Z",
+      "name": "Exfiltration Over Physical Medium",
+      "description": "Adversaries may attempt to exfiltrate data via a physical medium, such as a removable drive. In certain circumstances, such as an air-gapped network compromise, exfiltration could occur via a physical medium or device introduced by a user. Such media could be an external hard drive, USB drive, cellular phone, MP3 player, or other removable storage and processing device. The physical medium or device could be used as the final exfiltration point or to hop between otherwise disconnected systems.(Citation: USB Drives Threaten Enterprise Security)(Citation: Tropic Trooper\u2019s USBferry)(Citation: APT37 Adds New Capabilities for Air-Gapped Networks)",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "exfiltration"
+        }
+      ],
+      "x_mitre_attack_spec_version": "3.3.0",
+      "x_mitre_contributors": [
+        "William Cain"
+      ],
+      "x_mitre_deprecated": false,
+      "x_mitre_domains": [
+        "enterprise-attack"
+      ],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_modified_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "x_mitre_platforms": [
+        "Linux",
+        "macOS",
+        "Windows"
+      ],
+      "x_mitre_version": "1.4"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
+      "created": "2017-05-31T21:31:00.645Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "revoked": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/techniques/T1078",
+          "external_id": "T1078"
+        },
+        {
+          "source_name": "volexity_0day_sophos_FW",
+          "description": "Adair, S., Lancaster, T., Volexity Threat Research. (2022, June 15). DriftingCloud: Zero-Day Sophos Firewall Exploitation and an Insidious Breach. Retrieved July 1, 2022.",
+          "url": "https://www.volexity.com/blog/2022/06/15/driftingcloud-zero-day-sophos-firewall-exploitation-and-an-insidious-breach/"
+        },
+        {
+          "source_name": "CISA MFA PrintNightmare",
+          "description": "Cybersecurity and Infrastructure Security Agency. (2022, March 15). Russian State-Sponsored Cyber Actors Gain Network Access by Exploiting Default Multifactor Authentication Protocols and \u201cPrintNightmare\u201d Vulnerability. Retrieved March 16, 2022.",
+          "url": "https://www.cisa.gov/uscert/ncas/alerts/aa22-074a"
+        },
+        {
+          "source_name": "TechNet Credential Theft",
+          "description": "Microsoft. (2016, April 15). Attractive Accounts for Credential Theft. Retrieved June 3, 2016.",
+          "url": "https://technet.microsoft.com/en-us/library/dn535501.aspx"
+        }
+      ],
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-05-12T15:12:00.707Z",
+      "name": "Valid Accounts",
+      "description": "Adversaries may obtain and abuse credentials of existing accounts as a means of gaining Initial Access, Persistence, Privilege Escalation, or Defense Evasion. Compromised credentials may be used to bypass access controls placed on various resources on systems within the network and may even be used for persistent access to remote systems and externally available services, such as VPNs, Outlook Web Access, network devices, and remote desktop.(Citation: volexity_0day_sophos_FW) Compromised credentials may also grant an adversary increased privilege to specific systems or access to restricted areas of the network. Adversaries may choose not to use malware or tools in conjunction with the legitimate access those credentials provide to make it harder to detect their presence.\n\nIn some cases, adversaries may abuse inactive accounts: for example, those belonging to individuals who are no longer part of an organization. Using these accounts may allow the adversary to evade detection, as the original account user will not be present to identify any anomalous activity taking place on their account.(Citation: CISA MFA PrintNightmare)\n\nThe overlap of permissions for local, domain, and cloud accounts across a network of systems is of concern because the adversary may be able to pivot across accounts and systems to reach a high level of access (i.e., domain or enterprise administrator) to bypass access controls set within the enterprise.(Citation: TechNet Credential Theft)",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "stealth"
+        },
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "persistence"
+        },
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "privilege-escalation"
+        },
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "initial-access"
+        }
+      ],
+      "x_mitre_attack_spec_version": "3.3.0",
+      "x_mitre_contributors": [
+        "Jon Sternstein, Stern Security",
+        "Mark Wee",
+        "Menachem Goldstein",
+        "Netskope",
+        "Praetorian",
+        "Prasad Somasamudram, McAfee",
+        "Sekhar Sarukkai, McAfee",
+        "Syed Ummar Farooqh, McAfee",
+        "Yossi Weizman, Azure Defender Research Team"
+      ],
+      "x_mitre_deprecated": false,
+      "x_mitre_domains": [
+        "enterprise-attack"
+      ],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_modified_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "x_mitre_platforms": [
+        "Containers",
+        "ESXi",
+        "IaaS",
+        "Identity Provider",
+        "Linux",
+        "macOS",
+        "Network Devices",
+        "Office Suite",
+        "SaaS",
+        "Windows"
+      ],
+      "x_mitre_version": "3.0"
+    },
+    {
+      "type": "attack-pattern",
+      "spec_version": "2.1",
+      "id": "attack-pattern--a19e86f8-1c0a-4fea-8407-23b73d615776",
+      "created": "2017-05-31T21:30:44.720Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "revoked": false,
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "url": "https://attack.mitre.org/techniques/T1048",
+          "external_id": "T1048"
+        },
+        {
+          "source_name": "University of Birmingham C2",
+          "description": "Gardiner, J.,  Cova, M., Nagaraja, S. (2014, February). Command & Control Understanding, Denying and Detecting. Retrieved September 3, 2026.",
+          "url": "https://arxiv.org/pdf/1408.1136"
+        },
+        {
+          "source_name": "Palo Alto OilRig Oct 2016",
+          "description": "Grunzweig, J. and Falcone, R.. (2016, October 4). OilRig Malware Campaign Updates Toolset and Expands Targets. Retrieved May 3, 2017.",
+          "url": "http://researchcenter.paloaltonetworks.com/2016/10/unit42-oilrig-malware-campaign-updates-toolset-and-expands-targets/"
+        },
+        {
+          "source_name": "20 macOS Common Tools and Techniques",
+          "description": "Phil Stokes. (2021, February 16). 20 Common Tools & Techniques Used by macOS Threat Actors & Malware. Retrieved August 23, 2021.",
+          "url": "https://labs.sentinelone.com/20-common-tools-techniques-used-by-macos-threat-actors-malware/"
+        }
+      ],
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2026-09-03T19:46:48.106Z",
+      "name": "Exfiltration Over Alternative Protocol",
+      "description": "Adversaries may steal data by exfiltrating it over a different protocol than that of the existing command and control channel. The data may also be sent to an alternate network location from the main command and control server.  \n\nAlternate protocols include FTP, SMTP, HTTP/S, DNS, SMB, or any other network protocol not being used as the main command and control channel. Adversaries may also opt to encrypt and/or obfuscate these alternate channels. \n\n[Exfiltration Over Alternative Protocol](https://attack.mitre.org/techniques/T1048) can be done using various common operating system utilities such as [Net](https://attack.mitre.org/software/S0039)/SMB or FTP.(Citation: Palo Alto OilRig Oct 2016) On macOS and Linux <code>curl</code> may be used to invoke protocols such as HTTP/S or FTP/S to exfiltrate data from a system.(Citation: 20 macOS Common Tools and Techniques)\n\nMany IaaS and SaaS platforms (such as Microsoft Exchange, Microsoft SharePoint, GitHub, and AWS S3) support the direct download of files, emails, source code, and other sensitive information via the web console or [Cloud API](https://attack.mitre.org/techniques/T1059/009).",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "exfiltration"
+        }
+      ],
+      "x_mitre_attack_spec_version": "3.3.0",
+      "x_mitre_contributors": [
+        "William Cain",
+        "Alfredo Abarca"
+      ],
+      "x_mitre_deprecated": false,
+      "x_mitre_domains": [
+        "enterprise-attack"
+      ],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_modified_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "x_mitre_platforms": [
+        "ESXi",
+        "IaaS",
+        "Linux",
+        "macOS",
+        "Network Devices",
+        "Office Suite",
+        "SaaS",
+        "Windows"
+      ],
+      "x_mitre_version": "1.6"
+    },
+    {
+      "type": "identity",
+      "spec_version": "2.1",
+      "id": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.51856Z",
+      "modified": "2026-10-21T04:38:18.51856Z",
+      "name": "Example Enterprise SOC",
+      "description": "Organisation whose logs were analysed by Cyber Intelligence GraphRAG.",
+      "identity_class": "organization"
+    },
+    {
+      "type": "user-account",
+      "spec_version": "2.1",
+      "id": "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5",
+      "user_id": "ASS0517",
+      "account_login": "ASS0517"
+    },
+    {
+      "type": "threat-actor",
+      "spec_version": "2.1",
+      "id": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.51933Z",
+      "modified": "2026-10-21T04:38:18.51933Z",
+      "name": "Suspected insider: ASS0517",
+      "description": "Account whose behaviour matched ATT&CK techniques on evidence paths verified against the knowledge graph. This is a lead for an analyst, not a finding of guilt.",
+      "threat_actor_types": [
+        "unknown"
+      ],
+      "roles": [
+        "agent"
+      ],
+      "confidence": 68
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--233f1ad3-0181-59bf-8522-fc82c197656c",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.51954Z",
+      "modified": "2026-10-21T04:38:18.51954Z",
+      "relationship_type": "impersonates",
+      "description": "Acts from inside the organisation using account ASS0517.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--eba6e629-c2d0-5d93-a239-6fac02384598",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.519711Z",
+      "modified": "2026-10-21T04:38:18.519711Z",
+      "relationship_type": "uses",
+      "description": "ASS0517 matched T1567 (Exfiltration Over Web Service) via external_email_with_attachment on 2 verified evidence path(s); strongest path confidence 0.68.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "attack-pattern--40597f16-0963-4249-bf4c-ac93b7fb9807",
+      "confidence": 68
+    },
+    {
+      "type": "email-message",
+      "spec_version": "2.1",
+      "id": "email-message--a208a5be-3228-50c0-b2e8-713553690bf4",
+      "is_multipart": false,
+      "subject": "CERT email event H6Q5-Y0KF28UF-4485YYOK",
+      "x_cybergraphrag_recipients": "Kirk-House@yahoo.com"
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--fc701359-a047-5ce4-8aa0-22ee14f2d8f7",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.520286Z",
+      "modified": "2026-10-21T04:38:18.520286Z",
+      "first_observed": "2010-01-20T11:24:02Z",
+      "last_observed": "2010-01-20T11:24:02Z",
+      "number_observed": 2,
+      "object_refs": [
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5",
+        "email-message--a208a5be-3228-50c0-b2e8-713553690bf4"
+      ],
+      "x_cybergraphrag_edge_ids": [
+        "e164",
+        "e195",
+        "e301"
+      ]
+    },
+    {
+      "type": "sighting",
+      "spec_version": "2.1",
+      "id": "sighting--f7f72a4f-7171-5eb9-ad67-6714e2bc9306",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.520601Z",
+      "modified": "2026-10-21T04:38:18.520601Z",
+      "first_seen": "2010-01-20T11:24:02Z",
+      "last_seen": "2010-01-20T11:24:02Z",
+      "count": 2,
+      "sighting_of_ref": "attack-pattern--40597f16-0963-4249-bf4c-ac93b7fb9807",
+      "observed_data_refs": [
+        "observed-data--fc701359-a047-5ce4-8aa0-22ee14f2d8f7"
+      ],
+      "where_sighted_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+      ],
+      "confidence": 68
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--ce449ba6-bbe1-5065-b6fe-858e56365a09",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.520779Z",
+      "modified": "2026-10-21T04:38:18.520779Z",
+      "relationship_type": "uses",
+      "description": "ASS0517 matched T1005 (Data from Local System) via first_time_file_access on 3 verified evidence path(s); strongest path confidence 0.51.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "attack-pattern--3c4a2599-71ee-4405-ba1e-0e28414b4bc5",
+      "confidence": 51
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--df5e28c1-da4f-5236-83b2-b1294233d24d",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.520931Z",
+      "modified": "2026-10-21T04:38:18.520931Z",
+      "first_observed": "2010-01-13T23:47:08Z",
+      "last_observed": "2010-01-14T23:48:28Z",
+      "number_observed": 3,
+      "object_refs": [
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5"
+      ],
+      "x_cybergraphrag_edge_ids": [
+        "e144",
+        "e145",
+        "e146"
+      ]
+    },
+    {
+      "type": "sighting",
+      "spec_version": "2.1",
+      "id": "sighting--fd8aa761-b5ab-5cb9-85f9-d01e32c8c23e",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521117Z",
+      "modified": "2026-10-21T04:38:18.521117Z",
+      "first_seen": "2010-01-13T23:47:08Z",
+      "last_seen": "2010-01-14T23:48:28Z",
+      "count": 3,
+      "sighting_of_ref": "attack-pattern--3c4a2599-71ee-4405-ba1e-0e28414b4bc5",
+      "observed_data_refs": [
+        "observed-data--df5e28c1-da4f-5236-83b2-b1294233d24d"
+      ],
+      "where_sighted_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+      ],
+      "confidence": 51
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--89522b54-ff9e-5f84-8686-4fd25aa9be38",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521272Z",
+      "modified": "2026-10-21T04:38:18.521272Z",
+      "relationship_type": "uses",
+      "description": "ASS0517 matched T1052 (Exfiltration Over Physical Medium) via usb_device_connect on 2 verified evidence path(s); strongest path confidence 0.51.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "attack-pattern--e6415f09-df0e-48de-9aba-928c902b7549",
+      "confidence": 51
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--91d6856b-88ea-57c3-83ab-5cb5422086c1",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521415Z",
+      "modified": "2026-10-21T04:38:18.521415Z",
+      "first_observed": "2010-01-13T23:20:37Z",
+      "last_observed": "2010-01-14T23:20:00Z",
+      "number_observed": 2,
+      "object_refs": [
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5"
+      ],
+      "x_cybergraphrag_edge_ids": [
+        "e137",
+        "e138"
+      ]
+    },
+    {
+      "type": "sighting",
+      "spec_version": "2.1",
+      "id": "sighting--819018fc-3a93-57d5-89d9-01c2efbcf50d",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521558Z",
+      "modified": "2026-10-21T04:38:18.521558Z",
+      "first_seen": "2010-01-13T23:20:37Z",
+      "last_seen": "2010-01-14T23:20:00Z",
+      "count": 2,
+      "sighting_of_ref": "attack-pattern--e6415f09-df0e-48de-9aba-928c902b7549",
+      "observed_data_refs": [
+        "observed-data--91d6856b-88ea-57c3-83ab-5cb5422086c1"
+      ],
+      "where_sighted_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+      ],
+      "confidence": 51
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--61590d5d-8257-51ba-bd9c-bad17350d3c7",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521703Z",
+      "modified": "2026-10-21T04:38:18.521703Z",
+      "relationship_type": "uses",
+      "description": "ASS0517 matched T1078 (Valid Accounts) via off_hours_login on 2 verified evidence path(s); strongest path confidence 0.51.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
+      "confidence": 51
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--acabdf62-85cb-5586-af4f-f2368eb55710",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521831Z",
+      "modified": "2026-10-21T04:38:18.521831Z",
+      "first_observed": "2010-01-13T23:05:15Z",
+      "last_observed": "2010-01-14T23:05:47Z",
+      "number_observed": 2,
+      "object_refs": [
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5"
+      ],
+      "x_cybergraphrag_edge_ids": [
+        "e134",
+        "e135"
+      ]
+    },
+    {
+      "type": "sighting",
+      "spec_version": "2.1",
+      "id": "sighting--a6064818-fcb5-5a57-946c-7f03f6e5c6d7",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.521962Z",
+      "modified": "2026-10-21T04:38:18.521962Z",
+      "first_seen": "2010-01-13T23:05:15Z",
+      "last_seen": "2010-01-14T23:05:47Z",
+      "count": 2,
+      "sighting_of_ref": "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
+      "observed_data_refs": [
+        "observed-data--acabdf62-85cb-5586-af4f-f2368eb55710"
+      ],
+      "where_sighted_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+      ],
+      "confidence": 51
+    },
+    {
+      "type": "relationship",
+      "spec_version": "2.1",
+      "id": "relationship--2102eaf2-84ec-5d29-809d-5d48e7f9e65c",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.522134Z",
+      "modified": "2026-10-21T04:38:18.522134Z",
+      "relationship_type": "uses",
+      "description": "ASS0517 matched T1048 (Exfiltration Over Alternative Protocol) via email_to_many_external_recipients on 1 verified evidence path(s); strongest path confidence 0.37.",
+      "source_ref": "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+      "target_ref": "attack-pattern--a19e86f8-1c0a-4fea-8407-23b73d615776",
+      "confidence": 37
+    },
+    {
+      "type": "observed-data",
+      "spec_version": "2.1",
+      "id": "observed-data--e3c15c82-e3c7-5361-9c8d-77cc8dd7d59c",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.52226Z",
+      "modified": "2026-10-21T04:38:18.52226Z",
+      "first_observed": "2010-01-08T15:48:12Z",
+      "last_observed": "2010-01-08T15:48:12Z",
+      "number_observed": 1,
+      "object_refs": [
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5"
+      ],
+      "x_cybergraphrag_edge_ids": [
+        "e153"
+      ]
+    },
+    {
+      "type": "sighting",
+      "spec_version": "2.1",
+      "id": "sighting--5c894455-9036-5e3f-a3ef-54b22644689d",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.522405Z",
+      "modified": "2026-10-21T04:38:18.522405Z",
+      "first_seen": "2010-01-08T15:48:12Z",
+      "last_seen": "2010-01-08T15:48:12Z",
+      "count": 1,
+      "sighting_of_ref": "attack-pattern--a19e86f8-1c0a-4fea-8407-23b73d615776",
+      "observed_data_refs": [
+        "observed-data--e3c15c82-e3c7-5361-9c8d-77cc8dd7d59c"
+      ],
+      "where_sighted_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b"
+      ],
+      "confidence": 37
+    },
+    {
+      "type": "note",
+      "spec_version": "2.1",
+      "id": "note--56e80ef8-626f-5002-b8b2-23e1eb87a7ae",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.522553Z",
+      "modified": "2026-10-21T04:38:18.522553Z",
+      "abstract": "Groundedness check: grounded",
+      "content": "Every claim in the verdict must cite an edge that exists in the retrieved knowledge graph. Status: grounded; 18 cited edge(s) verified; missing: none; regeneration attempts: 0.",
+      "authors": [
+        "Cyber Intelligence GraphRAG"
+      ],
+      "object_refs": [
+        "report--8bf051dd-3d46-51d0-8ce6-a8a652eedeeb"
+      ]
+    },
+    {
+      "type": "report",
+      "spec_version": "2.1",
+      "id": "report--8bf051dd-3d46-51d0-8ce6-a8a652eedeeb",
+      "created_by_ref": "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+      "created": "2026-10-21T04:38:18.522696Z",
+      "modified": "2026-10-21T04:38:18.522696Z",
+      "name": "Insider-threat verdict for ASS0517: suspicious",
+      "description": "ASS0517: 5 distinct ATT&CK technique(s) linked by evidence paths \u2014 T1078 via off_hours_login (4 supporting events, path confidence 0.51, seen in 8% of peers); T1052 via usb_device_connect (4 supporting events, path confidence 0.51, seen in 50% of peers); T1005 via first_time_file_access (8 supporting events, path confidence 0.51, seen in 50% of peers); T1567 via external_email_with_attachment (10 supporting events, path confidence 0.68, seen in 83% of peers); T1048 via email_to_many_external_recipients (6 supporting events, path confidence 0.37, seen in 100% of peers). Combined behavioural risk 0.52 (MEDIUM). Multiple distinct stages co-occur \u2014 recommend analyst review.",
+      "report_types": [
+        "threat-actor",
+        "attack-pattern"
+      ],
+      "published": "2026-10-21T04:38:18.518476Z",
+      "object_refs": [
+        "identity--3ce77bb0-4379-538d-a47d-b463c9d5a37b",
+        "user-account--ec9654c3-414e-5e87-8516-7b1f7100d0d5",
+        "threat-actor--d2714f50-7b73-55a7-bd8a-9852fc1a1ae2",
+        "relationship--233f1ad3-0181-59bf-8522-fc82c197656c",
+        "relationship--eba6e629-c2d0-5d93-a239-6fac02384598",
+        "email-message--a208a5be-3228-50c0-b2e8-713553690bf4",
+        "observed-data--fc701359-a047-5ce4-8aa0-22ee14f2d8f7",
+        "sighting--f7f72a4f-7171-5eb9-ad67-6714e2bc9306",
+        "relationship--ce449ba6-bbe1-5065-b6fe-858e56365a09",
+        "observed-data--df5e28c1-da4f-5236-83b2-b1294233d24d",
+        "sighting--fd8aa761-b5ab-5cb9-85f9-d01e32c8c23e",
+        "relationship--89522b54-ff9e-5f84-8686-4fd25aa9be38",
+        "observed-data--91d6856b-88ea-57c3-83ab-5cb5422086c1",
+        "sighting--819018fc-3a93-57d5-89d9-01c2efbcf50d",
+        "relationship--61590d5d-8257-51ba-bd9c-bad17350d3c7",
+        "observed-data--acabdf62-85cb-5586-af4f-f2368eb55710",
+        "sighting--a6064818-fcb5-5a57-946c-7f03f6e5c6d7",
+        "relationship--2102eaf2-84ec-5d29-809d-5d48e7f9e65c",
+        "observed-data--e3c15c82-e3c7-5361-9c8d-77cc8dd7d59c",
+        "sighting--5c894455-9036-5e3f-a3ef-54b22644689d",
+        "attack-pattern--40597f16-0963-4249-bf4c-ac93b7fb9807",
+        "attack-pattern--3c4a2599-71ee-4405-ba1e-0e28414b4bc5",
+        "attack-pattern--e6415f09-df0e-48de-9aba-928c902b7549",
+        "attack-pattern--b17a1a56-e99c-403c-8948-561df0cffe81",
+        "attack-pattern--a19e86f8-1c0a-4fea-8407-23b73d615776",
+        "note--56e80ef8-626f-5002-b8b2-23e1eb87a7ae"
+      ],
+      "labels": [
+        "suspicious"
+      ],
+      "confidence": 68,
+      "x_cybergraphrag_groundedness": "grounded",
+      "x_cybergraphrag_model": "template-fallback",
+      "x_cybergraphrag_risk_score": 0.518
+    }
+  ]
+}

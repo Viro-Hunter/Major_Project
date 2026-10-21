@@ -143,6 +143,7 @@ export default function DashboardPage() {
               <p style={{ margin: '6px 0 0', opacity: 0.85, fontSize: 13, maxWidth: 720 }}>
                 Behavioral insider-threat detection — CERT logs → knowledge graph → GraphRAG retrieval → grounded LLM reasoning
               </p>
+              <a href="#story" style={{ display: 'inline-block', marginTop: 8, color: '#fbbf24', fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>▶ Story mode — the guided walkthrough for presentations</a>
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
               <span style={{ background: 'rgba(255,255,255,0.12)', padding: '6px 10px', borderRadius: 20, backdropFilter: 'blur(6px)' }}>

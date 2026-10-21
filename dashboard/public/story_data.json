@@ -1,0 +1,566 @@
+{
+  "generated_at": "2026-10-21T04:38:18",
+  "case": {
+    "user": "ASS0517",
+    "pc": "PC-2271",
+    "colleagues": 11,
+    "attack_date": "13\u201314 January 2010"
+  },
+  "scale": {
+    "employees": 12,
+    "events": 1854,
+    "events_insider": 134,
+    "graph_nodes": 1105,
+    "graph_edges": 5420,
+    "days": 15,
+    "by_kind": {
+      "login": 484,
+      "USB": 204,
+      "file": 204,
+      "email": 480,
+      "web": 482
+    }
+  },
+  "timeline": [
+    {
+      "date": "2010-01-04",
+      "normal": 35,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-05",
+      "normal": 17,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-06",
+      "normal": 5,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-07",
+      "normal": 6,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-08",
+      "normal": 6,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-11",
+      "normal": 5,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-12",
+      "normal": 6,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-13",
+      "normal": 6,
+      "night": 0,
+      "attack": 5
+    },
+    {
+      "date": "2010-01-14",
+      "normal": 6,
+      "night": 0,
+      "attack": 7
+    },
+    {
+      "date": "2010-01-15",
+      "normal": 6,
+      "night": 0,
+      "attack": 2
+    },
+    {
+      "date": "2010-01-18",
+      "normal": 5,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-19",
+      "normal": 6,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-20",
+      "normal": 6,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-21",
+      "normal": 4,
+      "night": 0,
+      "attack": 0
+    },
+    {
+      "date": "2010-01-22",
+      "normal": 1,
+      "night": 0,
+      "attack": 0
+    }
+  ],
+  "night_events": [
+    {
+      "time": "2010-01-13T23:05:15",
+      "kind": "login",
+      "text": "11:05 PM \u2014 logged in to PC-2271"
+    },
+    {
+      "time": "2010-01-13T23:20:37",
+      "kind": "USB",
+      "text": "11:20 PM \u2014 USB drive plugged in"
+    },
+    {
+      "time": "2010-01-13T23:36:45",
+      "kind": "file",
+      "text": "11:36 PM \u2014 opened file 4894ZJOJ.doc"
+    },
+    {
+      "time": "2010-01-13T23:47:08",
+      "kind": "file",
+      "text": "11:47 PM \u2014 opened file X4EA4Q9O.doc"
+    },
+    {
+      "time": "2010-01-13T23:55:55",
+      "kind": "web",
+      "text": "11:55 PM \u2014 visited wikileaks.org"
+    },
+    {
+      "time": "2010-01-14T00:10:33",
+      "kind": "USB",
+      "text": "12:10 AM \u2014 USB drive removed"
+    },
+    {
+      "time": "2010-01-14T00:15:24",
+      "kind": "login",
+      "text": "12:15 AM \u2014 logged off PC-2271"
+    },
+    {
+      "time": "2010-01-14T23:05:47",
+      "kind": "login",
+      "text": "11:05 PM \u2014 logged in to PC-2271"
+    },
+    {
+      "time": "2010-01-14T23:20:00",
+      "kind": "USB",
+      "text": "11:20 PM \u2014 USB drive plugged in"
+    },
+    {
+      "time": "2010-01-14T23:32:10",
+      "kind": "file",
+      "text": "11:32 PM \u2014 opened file CTBR4Y1Z.doc"
+    },
+    {
+      "time": "2010-01-14T23:48:28",
+      "kind": "file",
+      "text": "11:48 PM \u2014 opened file IXGCI5NQ.doc"
+    },
+    {
+      "time": "2010-01-14T23:55:43",
+      "kind": "web",
+      "text": "11:55 PM \u2014 visited wikileaks.org"
+    },
+    {
+      "time": "2010-01-15T00:10:49",
+      "kind": "USB",
+      "text": "12:10 AM \u2014 USB drive removed"
+    },
+    {
+      "time": "2010-01-15T00:15:40",
+      "kind": "login",
+      "text": "12:15 AM \u2014 logged off PC-2271"
+    }
+  ],
+  "graph": {
+    "nodes": [
+      {
+        "id": "ASS0517",
+        "label": "ASS0517",
+        "kind": "person",
+        "x": 90,
+        "y": 230
+      },
+      {
+        "id": "email:{H6Q5-Y0KF28UF-4485YYOK}",
+        "label": "Email to 1 outside address(es)",
+        "kind": "email",
+        "attack_id": null,
+        "x": 400,
+        "y": 230
+      },
+      {
+        "id": "attack:T1567",
+        "label": "Emailed attachments outside the company",
+        "kind": "technique",
+        "attack_id": "T1567",
+        "x": 720,
+        "y": 86
+      },
+      {
+        "id": "attack:T1005",
+        "label": "Opened files they had never touched before",
+        "kind": "technique",
+        "attack_id": "T1005",
+        "x": 720,
+        "y": 302
+      },
+      {
+        "id": "device:{INJS1-7T9VA0UB-60535197X}",
+        "label": "USB drive",
+        "kind": "usb",
+        "attack_id": null,
+        "x": 400,
+        "y": 350
+      },
+      {
+        "id": "attack:T1052",
+        "label": "Plugged in a USB storage device",
+        "kind": "technique",
+        "attack_id": "T1052",
+        "x": 720,
+        "y": 374
+      },
+      {
+        "id": "host:PC-2271",
+        "label": "Computer PC-2271",
+        "kind": "computer",
+        "attack_id": null,
+        "x": 400,
+        "y": 110
+      },
+      {
+        "id": "attack:T1078",
+        "label": "Logged in outside working hours",
+        "kind": "technique",
+        "attack_id": "T1078",
+        "x": 720,
+        "y": 230
+      },
+      {
+        "id": "attack:T1048",
+        "label": "Emailed many outside addresses at once",
+        "kind": "technique",
+        "attack_id": "T1048",
+        "x": 720,
+        "y": 158
+      }
+    ],
+    "edges": [
+      {
+        "source": "ASS0517",
+        "target": "email:{H6Q5-Y0KF28UF-4485YYOK}",
+        "relation": "sent email to",
+        "edge_id": "e195"
+      },
+      {
+        "source": "email:{H6Q5-Y0KF28UF-4485YYOK}",
+        "target": "attack:T1567",
+        "relation": "indicates",
+        "edge_id": "e301"
+      },
+      {
+        "source": "ASS0517",
+        "target": "attack:T1005",
+        "relation": "matches technique",
+        "edge_id": "e146"
+      },
+      {
+        "source": "ASS0517",
+        "target": "device:{INJS1-7T9VA0UB-60535197X}",
+        "relation": "connected device",
+        "edge_id": "e140"
+      },
+      {
+        "source": "device:{INJS1-7T9VA0UB-60535197X}",
+        "target": "attack:T1052",
+        "relation": "indicates",
+        "edge_id": "e246"
+      },
+      {
+        "source": "ASS0517",
+        "target": "host:PC-2271",
+        "relation": "observed on",
+        "edge_id": "e27"
+      },
+      {
+        "source": "host:PC-2271",
+        "target": "attack:T1078",
+        "relation": "indicates",
+        "edge_id": "e241"
+      },
+      {
+        "source": "ASS0517",
+        "target": "attack:T1048",
+        "relation": "matches technique",
+        "edge_id": "e153"
+      }
+    ]
+  },
+  "peers": [
+    {
+      "technique": "T1078",
+      "label": "Logged in outside working hours",
+      "share": 0.083,
+      "insider": true
+    },
+    {
+      "technique": "T1071",
+      "label": "Used an upload or file-sharing website",
+      "share": 0.167,
+      "insider": false
+    },
+    {
+      "technique": "T1030",
+      "label": "Moved an unusually large amount of data",
+      "share": 0.167,
+      "insider": false
+    },
+    {
+      "technique": "T1052",
+      "label": "Plugged in a USB storage device",
+      "share": 0.5,
+      "insider": true
+    },
+    {
+      "technique": "T1005",
+      "label": "Opened files they had never touched before",
+      "share": 0.5,
+      "insider": true
+    },
+    {
+      "technique": "T1567",
+      "label": "Emailed attachments outside the company",
+      "share": 0.833,
+      "insider": true
+    },
+    {
+      "technique": "T1048",
+      "label": "Emailed many outside addresses at once",
+      "share": 1.0,
+      "insider": true
+    }
+  ],
+  "verdict": {
+    "question": "Is ASS0517 taking company data?",
+    "narrative": "ASS0517: 5 distinct ATT&CK technique(s) linked by evidence paths \u2014 T1078 via off_hours_login (4 supporting events, path confidence 0.51, seen in 8% of peers); T1052 via usb_device_connect (4 supporting events, path confidence 0.51, seen in 50% of peers); T1005 via first_time_file_access (8 supporting events, path confidence 0.51, seen in 50% of peers); T1567 via external_email_with_attachment (10 supporting events, path confidence 0.68, seen in 83% of peers); T1048 via email_to_many_external_recipients (6 supporting events, path confidence 0.37, seen in 100% of peers). Combined behavioural risk 0.52 (MEDIUM). Multiple distinct stages co-occur \u2014 recommend analyst review.",
+    "risk": 0.518,
+    "label": "suspicious",
+    "confidence_pct": 68.1,
+    "cited": 18,
+    "verified": 18,
+    "techniques": [
+      {
+        "id": "T1078",
+        "plain": "Logged in outside working hours",
+        "peer_share": 0.0833,
+        "contribution": 0.2351
+      },
+      {
+        "id": "T1052",
+        "plain": "Plugged in a USB storage device",
+        "peer_share": 0.5,
+        "contribution": 0.2053
+      },
+      {
+        "id": "T1005",
+        "plain": "Opened files they had never touched before",
+        "peer_share": 0.5,
+        "contribution": 0.1285
+      },
+      {
+        "id": "T1567",
+        "plain": "Emailed attachments outside the company",
+        "peer_share": 0.8333,
+        "contribution": 0.0907
+      },
+      {
+        "id": "T1048",
+        "plain": "Emailed many outside addresses at once",
+        "peer_share": 1.0,
+        "contribution": 0.0
+      }
+    ]
+  },
+  "claims": [
+    {
+      "technique": "T1048",
+      "text": "Emailed many outside addresses at once \u2014 8 Jan 2010, 3:48 PM",
+      "edge_ids": [
+        "e153"
+      ],
+      "verified": true,
+      "confidence": 0.3713,
+      "attack_name": "Exfiltration Over Alternative Protocol"
+    },
+    {
+      "technique": "T1078",
+      "text": "Logged in outside working hours \u2014 14 Jan 2010, 11:05 PM",
+      "edge_ids": [
+        "e27",
+        "e241"
+      ],
+      "verified": true,
+      "confidence": 0.2737,
+      "attack_name": "Valid Accounts"
+    },
+    {
+      "technique": "T1052",
+      "text": "Plugged in a USB storage device \u2014 14 Jan 2010, 11:20 PM",
+      "edge_ids": [
+        "e140",
+        "e246"
+      ],
+      "verified": true,
+      "confidence": 0.2587,
+      "attack_name": "Exfiltration Over Physical Medium"
+    },
+    {
+      "technique": "T1005",
+      "text": "Opened files they had never touched before \u2014 14 Jan 2010, 11:48 PM",
+      "edge_ids": [
+        "e146"
+      ],
+      "verified": true,
+      "confidence": 0.5138,
+      "attack_name": "Data from Local System"
+    },
+    {
+      "technique": "T1567",
+      "text": "Emailed attachments outside the company \u2014 20 Jan 2010, 11:24 AM",
+      "edge_ids": [
+        "e195",
+        "e301"
+      ],
+      "verified": true,
+      "confidence": 0.4818,
+      "attack_name": "Exfiltration Over Web Service"
+    },
+    {
+      "technique": null,
+      "text": "Copied the payroll spreadsheet to a personal Dropbox account",
+      "edge_ids": [
+        "e99999"
+      ],
+      "verified": false,
+      "confidence": 0.0,
+      "attack_name": "(invented by the model)"
+    }
+  ],
+  "hallucination": {
+    "status": "unverified",
+    "risk_before": 0.518,
+    "risk_after": 0.4144,
+    "missing": [
+      "e99999"
+    ]
+  },
+  "decay": [
+    {
+      "days": 0,
+      "weight": 1.0
+    },
+    {
+      "days": 1,
+      "weight": 0.95
+    },
+    {
+      "days": 3,
+      "weight": 0.857
+    },
+    {
+      "days": 7,
+      "weight": 0.698
+    },
+    {
+      "days": 14,
+      "weight": 0.488
+    },
+    {
+      "days": 30,
+      "weight": 0.215
+    },
+    {
+      "days": 60,
+      "weight": 0.046
+    }
+  ],
+  "stix": {
+    "objects": {
+      "identity": 2,
+      "marking-definition": 1,
+      "attack-pattern": 5,
+      "user-account": 1,
+      "threat-actor": 1,
+      "relationship": 6,
+      "email-message": 1,
+      "observed-data": 5,
+      "sighting": 5,
+      "note": 1,
+      "report": 1
+    },
+    "total": 29,
+    "attack_ids": [
+      "T1005",
+      "T1048",
+      "T1052",
+      "T1078",
+      "T1567"
+    ]
+  },
+  "benchmark": {
+    "label_mode": "injected",
+    "users": 60,
+    "insiders": 12,
+    "detected": 7,
+    "missed": 5,
+    "false_alarms": 4,
+    "benign": 48,
+    "fpr": 0.083,
+    "fpr_no_peer": 0.583,
+    "fpr_naive": 1.0,
+    "f1": 0.609,
+    "precision": 0.636,
+    "recall": 0.583,
+    "query_ms": 16.7,
+    "completeness": 1.0,
+    "by_scenario": {
+      "S1": {
+        "detected": 3,
+        "insiders": 4,
+        "description": "after-hours logins + removable media + upload to WikiLeaks"
+      },
+      "S2": {
+        "detected": 1,
+        "insiders": 4,
+        "description": "job-site browsing, then data theft over a thumb drive"
+      },
+      "S3": {
+        "detected": 3,
+        "insiders": 4,
+        "description": "disgruntled admin: keylogger, supervisor-PC login after hours, mass external email"
+      }
+    },
+    "fault": {
+      "injected": 15,
+      "caught": 15,
+      "recovered_by_retry": 10,
+      "flagged_unverified": 5,
+      "clean_false_alarms": 0,
+      "clean_verdicts": 60
+    }
+  }
+}

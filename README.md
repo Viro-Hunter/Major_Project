@@ -286,6 +286,23 @@ If you rely on the demo subset in CI, point ingestion to the `data/` demo files 
 
 ---
 
+## 🎬 Story mode (for presentations and non-technical audiences)
+
+Open the dashboard and click **▶ Story mode** (or go to `http://localhost:5173/#story`). Twelve presenter-paced scenes
+(→ / Space / ← or the buttons) follow one employee from ordinary days to two late nights of data theft, then show each
+step: connecting the dots, comparing with colleagues, the AI's plain-English answer, the fact-check that rejects an
+invented claim, confidence, the STIX 2.1 export and the measured results. It needs no API server, so it is safe to present offline.
+
+Every number in it comes from a real run: `python scripts/build_story.py` regenerates `dashboard/public/story_data.json`
+(re-run it after the benchmark). `python scripts/demo.py --pause` tells the same case in the terminal.
+
+## 🛰️ STIX 2.1 output
+
+`GET /incidents/{entity}/stix` (or **Download this case as STIX 2.1** in Story mode) returns the checked verdict as a STIX 2.1
+bundle: report, suspected threat actor, MITRE's **official** ATT&CK attack-pattern objects (original ids, from
+`data/attack_patterns.stix21.json`, rebuilt by `scripts/extract_attack_stix.py`), sightings, observed data and a note with
+the groundedness result. Only verified evidence is exported. Bundles are checked with the OASIS `stix2-validator` in the tests.
+
 ## 🧪 Testing & Evaluation
 
 ```bash
@@ -298,6 +315,20 @@ python scripts/demo.py --pause              # Week 12: live walkthrough for the 
 ```
 
 Add `--llm` to the e2e, benchmark or demo scripts to use the configured model instead of the offline template.
+
+**Real-LLM comparison.** With an OpenRouter key in `.env` (`LLM_PROVIDER=openrouter`, `OPENROUTER_MODEL=auto`):
+
+```bash
+python evaluation/compare_models.py --sleep 4            # template vs your LLM on the same 30 users
+python evaluation/compare_models.py --sleep 4 --hybrid   # + LLM extraction of implicit relations
+```
+
+`evaluation/results/model_comparison.md` shows detection quality and, for the real model, how many verdicts cited
+evidence that does not exist and how many the self-check repaired or flagged. `--sleep 4` keeps free models under their rate limit.
+
+**Extraction.** Structured CERT fields are extracted by rules (exact, free). `--extractor hybrid` (benchmark) or
+`--llm-extract` (e2e) adds LLM-inferred relations from windows of each user's events, capped at 0.6 confidence; any
+entity the model names that does not appear in the events it was shown is rejected (`extraction/llm_enrichment.py`).
 
 **Ground truth.** The benchmark uses the official CERT r4.2 answer key when `data/raw/answers/` exists
 (`python scripts/fetch_cert_data.py answers`). Otherwise it injects seeded insider scenarios, modelled on
